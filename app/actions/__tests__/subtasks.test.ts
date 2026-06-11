@@ -2,6 +2,7 @@ import "../../../shared/repositories/__tests__/db-test-setup";
 import { describe, expect, it } from "vitest";
 import {
   createSubtaskAction,
+  deleteSubtaskAction,
   getSubtasksAction,
   moveSubtaskAction,
   updateSubtaskAction,
@@ -34,12 +35,15 @@ describe("createSubtaskAction", () => {
     expect(subtasksRepository.listByTaskId(taskId)).toHaveLength(0);
   });
 
-  it("unknown taskId returns ok:false (FK mapped, not thrown)", async () => {
+  it("unknown taskId maps the FK violation to ok:false (not thrown)", async () => {
     const result = await createSubtaskAction({
       taskId: UNKNOWN_UUID,
       title: "x",
     });
     expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Task not found");
+    }
   });
 });
 
@@ -49,6 +53,9 @@ describe("updateSubtaskAction", () => {
     const s = subtasksRepository.create({ taskId, title: "s" });
     const result = await updateSubtaskAction({ id: s.id });
     expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe("Nothing to update");
+    }
   });
 });
 
@@ -62,6 +69,21 @@ describe("moveSubtaskAction", () => {
 
   it("maps an unknown id to ok:false (no throw)", async () => {
     const result = await moveSubtaskAction({ id: UNKNOWN_UUID, toPosition: 0 });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe("deleteSubtaskAction", () => {
+  it("deletes the row and returns ok", async () => {
+    const taskId = createParentTask();
+    const s = subtasksRepository.create({ taskId, title: "doomed" });
+    const result = await deleteSubtaskAction({ id: s.id });
+    expect(result.ok).toBe(true);
+    expect(subtasksRepository.findById(s.id)).toBeUndefined();
+  });
+
+  it("maps an unknown id to ok:false (no throw)", async () => {
+    const result = await deleteSubtaskAction({ id: UNKNOWN_UUID });
     expect(result.ok).toBe(false);
   });
 });
