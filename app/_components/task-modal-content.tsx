@@ -5,6 +5,7 @@ import { notFound, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { SubtaskSection } from "@/app/_components/subtask-section";
 import {
   deleteTaskAction,
   getBoardAction,
@@ -236,6 +237,7 @@ export function TaskModalContent({
           </Select>
         </div>
       </div>
+      <SubtaskSection taskId={task.id} />
       <div className="flex justify-end">
         <AlertDialog>
           <AlertDialogTrigger asChild>
