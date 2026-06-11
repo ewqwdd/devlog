@@ -9,7 +9,7 @@ decomposition and the status generator come after.
 
 - [x] Phase 0 — Project scaffold
 - [x] Phase 1 — Data layer
-- [ ] Phase 2 — Task CRUD + kanban board
+- [x] Phase 2 — Task CRUD + kanban board
 - [ ] Phase 3 — Subtasks
 - [ ] Phase 4 — Chat agent
 - [ ] Phase 5 — Prioritization agent
