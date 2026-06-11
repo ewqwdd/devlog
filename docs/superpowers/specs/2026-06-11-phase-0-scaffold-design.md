@@ -80,17 +80,18 @@ Install `@biomejs/biome` (latest; must be ≥ 2.4.11 for `useExplicitReturnType`
 
 **Known gaps (declared):**
 
-1. `@ts-nocheck` is not caught by `noTsIgnore` → covered by a grep step inside
-   `npm run lint` that fails when `@ts-nocheck` (or `@ts-ignore`, as
-   belt-and-braces) appears in source dirs.
+1. `@ts-nocheck` is not caught by `noTsIgnore` → covered by a small
+   cross-platform Node script (`scripts/check-ts-directives.mjs`, plain `node`,
+   no deps) run as part of `npm run lint`; it fails when `@ts-nocheck` (or
+   `@ts-ignore`, as belt-and-braces) appears in source dirs (`app/`,
+   `components/`, `services/`, `use-cases/`, `shared/`, `e2e/`).
 2. No "exported functions only" mode for return types → rule applies to all
    functions (decision above).
 
 ## 4. Tests
 
-- **Vitest**: `vitest` (+ `@vitejs/plugin-react` for later component tests),
-  `vitest.config.ts`, environment `node` (jsdom deferred until component tests
-  exist). One real test now: `shared/lib/logger.test.ts` (see §7 for cases).
+- **Vitest**: `vitest`, `vitest.config.ts`, environment `node` (jsdom and
+  `@vitejs/plugin-react` deferred until component tests exist — YAGNI). One real test now: `shared/lib/logger.test.ts` (see §7 for cases).
 - **Playwright**: `@playwright/test`, chromium only
   (`npx playwright install chromium`), `playwright.config.ts` with `webServer`
   auto-starting the dev server. One smoke spec: `e2e/smoke.spec.ts` (see §7).
@@ -117,7 +118,7 @@ Scripts in `package.json`:
 | `dev` | `next dev` |
 | `build` | `next build` |
 | `start` | `next start` |
-| `lint` | `biome check .` + grep step for `@ts-nocheck`/`@ts-ignore` in source dirs |
+| `lint` | `biome check .` + `node scripts/check-ts-directives.mjs` |
 | `format` | `biome format --write .` |
 | `typecheck` | `tsc --noEmit` |
 | `test` | `vitest run` |
