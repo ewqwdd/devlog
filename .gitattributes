@@ -1,2 +1,6 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Auto detect text files; force LF on checkout (Biome formatter expects LF)
+* text=auto eol=lf
+
+# Windows scripts need CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
