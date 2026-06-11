@@ -5,9 +5,11 @@
 - **Framework:** Next.js (App Router) + TypeScript strict.
 - **Rendering/data:** RSC + Server Actions by default + React Query on client side where needed.
 - **UI:** Tailwind v4 + shadcn/ui.
+- **Drag-and-drop:** dnd-kit.
 - **DB:** Drizzle ORM + SQLite.
 - **Validation:** zod v4.
-- **LLM:** Anthropic SDK.
+- **LLM:** Vercel AI SDK (`ai` + `@ai-sdk/anthropic`) — `streamText`/`generateText`/`generateObject`
+  with the multi-step tool loop; `useChat` on the client.
 - **Logging:** pino.
 - **Tests:** Vitest (unit/integration) + Playwright (e2e).
 - **Lint/format:** Biome only (its `useExhaustiveDependencies` / `useHookAtTopLevel` rules cover
@@ -90,6 +92,13 @@ shared/types/           types reused in more than one place
   Before declaring a new type, check `shared/types/` first: if a fitting type already exists,
   reuse it instead of redefining it.
 
+### Docs & UI components — strict, no deviations
+- If unsure how a library/technology you're about to use works — fetch current docs via
+  context7 before writing code. Never guess from memory.
+- Frontend styling is Tailwind only.
+- Before creating any new UI component in `shared/ui/` you MUST first check whether shadcn/ui
+  already has it; if it does, install it via the shadcn CLI instead of writing it yourself.
+
 ### Modals
 - All modal windows are implemented via Next.js intercepting routes: a parallel route slot
   (e.g. `app/@modal`) plus an intercepted segment (`(.)<route>`), with a full standalone page
@@ -155,3 +164,7 @@ For multi-step tasks, state a brief plan:
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 </behavioral_guidelines>
+
+
+### Project docs
+- Development roadmap: `docs/ROADMAP.md`
