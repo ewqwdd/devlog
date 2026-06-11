@@ -201,6 +201,8 @@ user can retry by sending again.
   - editTask title/priority patch → fields updated, position untouched
   - editTask status change → task is last in the target column; both
     affected columns stay dense `0..n-1`
+  - editTask combined patch + status in one call → fields updated AND task
+    moved to the end of the target column
   - editTask / deleteTask / editSubtask / deleteSubtask with unknown id →
     `{ok: false, error}` (no throw)
   - createSubtask appends; createSubtask with unknown taskId →
