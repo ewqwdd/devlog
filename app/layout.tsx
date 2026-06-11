@@ -3,7 +3,7 @@ import type React from "react";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 const manropeHeading = Manrope({
   subsets: ["latin"],
