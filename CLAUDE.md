@@ -107,6 +107,20 @@ shared/types/           types reused in more than one place
   Before declaring a new type, check `shared/types/` first: if a fitting type already exists,
   reuse it instead of redefining it.
 
+### TanStack Query — strict, no deviations
+- Every TanStack Query call (`useQuery`, `useMutation`, etc.) MUST be extracted into a dedicated
+  custom hook (`use-<name>.ts`) — never called inline in a component. Like the layer structure,
+  this is exempt from YAGNI: extract even a single-use query.
+- Hooks own the data concerns: query keys, query/mutation functions, optimistic cache updates,
+  rollback, invalidation. Components own UI side effects (toasts, navigation, local state) and
+  pass them in via the hook's callback options.
+- A query key is declared once, next to its query hook, and exported from there — never
+  redeclared in another file.
+- Before writing a new query hook, check for an existing one: one hook per query key, reused by
+  every consumer.
+- Hook files live in a `hooks/` folder next to their consumer components
+  (e.g. `app/<page>/_components/hooks/`).
+
 ### Docs & UI components — strict, no deviations
 - Use context7 sparingly. Fetch docs only when ALL of the following hold: the logic is critical
   (data integrity, payments, auth, irreversible operations), the use case is non-trivial (not a
