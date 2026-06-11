@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "75580e0f-1a56-451b-ae9f-7401cfcad2e9",
+  "id": "a5a82c32-1999-4a45-be23-964f2be35c12",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "status_updates": {
@@ -79,14 +79,6 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "''"
         },
         "position": {
           "name": "position",

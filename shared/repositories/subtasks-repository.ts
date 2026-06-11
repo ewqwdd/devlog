@@ -5,7 +5,6 @@ import type { NewSubtask, Subtask } from "@/shared/types/subtask";
 
 export interface SubtaskPatch {
   readonly title?: string;
-  readonly description?: string;
   readonly done?: boolean;
   readonly position?: number;
 }

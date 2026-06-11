@@ -81,7 +81,6 @@ export const subtasks = sqliteTable('subtasks', {
   taskId: text('task_id').notNull()
     .references(() => tasks.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
-  description: text('description').notNull().default(''),
   position: integer('position').notNull().default(0), // order within a task
   done: integer('done', { mode: 'boolean' }).notNull().default(false),
 });
@@ -115,7 +114,7 @@ export const statusUpdates = sqliteTable('status_updates', {
 ### 5.2 Subtasks
 
 - One level only (a task has many subtasks; subtasks have no subtasks).
-- Fields: title, description, position, done. No priority.
+- Fields: title, position, done. No priority, no description.
 - Shown and managed inside the task modal.
 
 ## 6. AI / agent design

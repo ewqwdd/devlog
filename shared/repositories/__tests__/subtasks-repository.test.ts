@@ -14,7 +14,6 @@ describe("subtasksRepository", () => {
     expect(subtask.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(subtask.done).toBe(false);
     expect(subtask.position).toBe(0);
-    expect(subtask.description).toBe("");
   });
 
   it("findById returns the row, undefined for unknown id", () => {
