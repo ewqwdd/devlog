@@ -19,6 +19,19 @@ If a task seems to need a library outside this list, stop and ask before adding 
 
 </stack>
 
+<commands>
+
+### npm commands
+- `npm run dev` — dev server
+- `npm run build` / `npm run start` — production build / serve
+- `npm run lint` — Biome check + banned-directive guard (`scripts/check-ts-directives.mjs`)
+- `npm run format` — Biome format (write)
+- `npm run typecheck` — `tsc --noEmit`
+- `npm run test` / `npm run test:watch` — Vitest
+- `npm run test:e2e` — Playwright (chromium)
+
+</commands>
+
 <code_guidelines>
 
 ### Enforced by tooling — never bypass
@@ -93,8 +106,15 @@ shared/types/           types reused in more than one place
   reuse it instead of redefining it.
 
 ### Docs & UI components — strict, no deviations
-- If unsure how a library/technology you're about to use works — fetch current docs via
-  context7 before writing code. Never guess from memory.
+- Use context7 sparingly. Fetch docs only when ALL of the following hold: the logic is critical
+  (data integrity, payments, auth, irreversible operations), the use case is non-trivial (not a
+  basic/common API usage), and you are genuinely unsure how the library works and clearly need
+  documentation. Otherwise rely on existing knowledge and the codebase's established patterns.
+- context7 is used via its HTTP API (no MCP server). API key is in `$env:CONTEXT7_API_KEY`.
+  - Search for a library id:
+    `curl.exe -s -H "Authorization: Bearer $env:CONTEXT7_API_KEY" "https://context7.com/api/v1/search?query=<query>"`
+  - Fetch docs (id comes from search results, keep leading slash off the path segment):
+    `curl.exe -s -H "Authorization: Bearer $env:CONTEXT7_API_KEY" "https://context7.com/api/v1/<library-id>?type=txt&topic=<topic>&tokens=2000"`
 - Frontend styling is Tailwind only.
 - Before creating any new UI component in `shared/ui/` you MUST first check whether shadcn/ui
   already has it; if it does, install it via the shadcn CLI instead of writing it yourself.
@@ -110,7 +130,7 @@ shared/types/           types reused in more than one place
 - Validate all external input at the boundary with a schema (zod) before business logic.
 - Throw only `Error` subclasses, never strings/objects. One consistent error shape in API responses.
 - async/await only, no callbacks. `return await` when returning a promise.
-- Structured logger (pino), never `console.log`.
+- Structured logger (pino, see `shared/lib/logger.ts`), never `console.log`.
 
 ### Naming & files
 - Variables/functions: camelCase. Types/interfaces/components: PascalCase. Constants: UPPER_SNAKE_CASE.
