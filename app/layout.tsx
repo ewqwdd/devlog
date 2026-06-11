@@ -2,8 +2,10 @@ import { Geist_Mono, Manrope, Nunito_Sans } from "next/font/google";
 import type React from "react";
 
 import "./globals.css";
+import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/shared/lib/utils";
+import { Toaster } from "@/shared/ui/sonner";
 
 const manropeHeading = Manrope({
   subsets: ["latin"],
@@ -19,8 +21,10 @@ const fontMono = Geist_Mono({
 
 export default function RootLayout({
   children,
+  modal,
 }: Readonly<{
   children: React.ReactNode;
+  modal: React.ReactNode;
 }>): React.JSX.Element {
   return (
     <html
@@ -35,7 +39,13 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <Providers>
+            {children}
+            {modal}
+            <Toaster />
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

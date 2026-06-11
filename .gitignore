@@ -45,3 +45,6 @@ next-env.d.ts
 
 # sqlite (local db + -journal/-wal sidecars)
 devlog.db*
+
+# e2e database (recreated each run by global-setup)
+/.e2e/

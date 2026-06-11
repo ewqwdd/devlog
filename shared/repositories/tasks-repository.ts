@@ -4,6 +4,7 @@ import { tasks } from "@/shared/infra/db/schema";
 import type {
   NewTask,
   Task,
+  TaskPositionUpdate,
   TaskPriority,
   TaskStatus,
 } from "@/shared/types/task";
@@ -14,12 +15,6 @@ export interface TaskPatch {
   readonly status?: TaskStatus;
   readonly priority?: TaskPriority;
   readonly position?: number;
-}
-
-export interface TaskPositionUpdate {
-  readonly id: string;
-  readonly position: number;
-  readonly status: TaskStatus;
 }
 
 export const tasksRepository = {
