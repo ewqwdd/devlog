@@ -3,64 +3,69 @@
 > ROADMAP: Phase 3 — Subtasks
 
 Add subtask management to DevLog: a subtask list inside the **Task modal** (the
-task view/edit modal delivered by Phase 2 — see "Task modal" below) where the
-user can add, rename, toggle completed, reorder (drag-and-drop), and delete
-subtasks. One level only, no priority. Positions of a task's subtasks are kept
-**dense**: always exactly `0, 1, …, n-1` with step 1. Layers per CLAUDE.md:
-Server Actions (controller) → `subtasks` service → existing `subtasksRepository`.
+task view/edit modal delivered by Phase 2 — see §1) where the user can add,
+rename, toggle done, reorder (drag-and-drop), and delete subtasks. One level
+only, no priority. Positions of a task's subtasks are kept **dense**: always
+exactly `0, 1, …, n-1` with step 1. Layers per CLAUDE.md: Server Actions
+(controller) → `subtasksService` → existing `subtasksRepository`. The design
+deliberately mirrors Phase 2's conventions (spec
+`2026-06-11-phase-2-task-crud-kanban-design.md`) one-to-one: same action result
+shape, same mutation recipe, same pure-compute + service split, same e2e infra.
 
 ## Decisions made during brainstorming
 
-- **The `completed` field already exists.** The working tree contains
-  uncommitted Phase-1 amendments: `subtasks.done` renamed to `completed`,
-  `subtasks.description` dropped, migration `0000` regenerated, DESIGN.md /
-  ROADMAP.md / repository / tests updated. Phase 3 treats this as its baseline
-  and adds **no schema or migration changes**. These amendments must be
-  committed (as a Phase-1 amendment commit) before Phase 3 implementation
-  starts.
-- **Phase 2 is a hard prerequisite.** The Task modal, `@dnd-kit/*`, and
-  `@tanstack/react-query` all arrive with Phase 2 (none are in `package.json`
-  today). Phase 3 cannot be implemented before Phase 2 lands.
-- **Move = splice + full renumber, in one transaction.** Moving a subtask is
-  remove-at-old-index, insert-at-new-index, then renumber the whole list
-  `0..n-1` via the existing transactional `updatePositions`. This is exactly
-  equivalent to the required range shift (moving index 5 to index 0 increments
-  former indices 0–4 by one) but simpler and self-healing.
-- **No use-case layer.** One service is enough, so Server Actions call the
-  subtasks service directly (CLAUDE.md use-case rule). Parent-task existence on
-  create is enforced by the FK constraint (`PRAGMA foreign_keys = ON`), not by
-  a lookup through the tasks repository — keeps the module boundary clean.
-- **Optimistic updates for toggle and reorder only.** A checkbox must flip
-  instantly and a dropped card must not snap back. Create / rename / delete
-  await the Server Action and then invalidate — simpler, and latency is local.
-- **`SubtaskSection` lives in `components/`.** It renders in two places — the
-  Task modal and its standalone fallback page (intercepting-route pattern) —
-  so per the folder rules it is a project-bound reusable component, not an
-  `app/<page>/_components/` one.
-- **shadcn first.** `checkbox` and `input` are installed via the shadcn CLI
-  into `shared/ui/` (only `button` exists today) before any custom UI is
-  written.
-- **Test DB helper is shared.** The Phase-1 helper
-  `shared/repositories/__tests__/db-test-setup.ts` moves to
-  `shared/testing/db-test-setup.ts` so service and action tests can reuse it
-  without importing another module's test internals (existing imports
-  updated). If Phase 2 has already relocated or replaced it, follow Phase 2's
-  lead instead.
+- **No schema changes.** The `subtasks` table already has everything Phase 3
+  needs — `id`, `taskId` (FK, cascade), `title`, `position`, `done` — since
+  Phase 1; commit `384c859` dropped the unused `description` column and fixed
+  the field set as `id, taskId, title, position, done`. The "field to mark a
+  subtask done" requirement is satisfied by the existing `done` column.
+- **Phase 2 is a hard prerequisite.** The Task modal, `@dnd-kit/*`,
+  `@tanstack/react-query`, `zod`, shadcn `sonner`/`input`, and the e2e
+  infrastructure (isolated `.e2e` DB, drag helper) all arrive with Phase 2
+  (none are in `package.json` today; Phase 2 is in development in parallel).
+  Phase 3 implementation cannot start before Phase 2 lands.
+- **Move = splice + renumber via a pure function, one transaction.** Same
+  pattern as Phase 2's `computeMove`: a pure `computeSubtaskMove` derives the
+  minimal set of position updates (exactly the required range shift: moving
+  index 5 to index 0 increments former 0–4 by one), the service persists it
+  with the existing transactional `updatePositions`.
+- **No use-case layer.** One service is enough, so Server Actions call
+  `subtasksService` directly (CLAUDE.md use-case rule). Parent-task existence
+  on create is enforced by the FK constraint (`PRAGMA foreign_keys = ON`), not
+  by a lookup through the tasks repository — keeps the module boundary clean.
+- **One `updateSubtask` for title and done** (mirrors Phase 2's
+  `updateTask` partial-patch shape) instead of separate rename/toggle
+  endpoints. Position is never patched directly — that's `moveSubtask`.
+- **All mutations optimistic except create.** Toggle / rename / move / delete
+  follow Phase 2's mutation recipe (snapshot → optimistic apply → rollback +
+  sonner toast on error → invalidate on settle). Create awaits the action and
+  then invalidates: an optimistic insert would need a temporary id inside a
+  `SortableContext`, and that churn isn't worth it for a local write.
+- **Subtask data is client-only, own query key.** Phase 2 made board data
+  client-only (`['board']`, no RSC fetching); subtasks follow:
+  `['subtasks', taskId]` fed by a `getSubtasksAction`. No RSC `initialData`,
+  no `revalidatePath`.
+- **Component placement follows Phase 2's precedent.** Subtask UI lives in
+  `app/_components/` next to `task-modal-content` (which already serves both
+  the intercepted modal and the `/tasks/[id]` fallback page). Nothing outside
+  the task modal consumes subtasks today; promotion to `components/` waits for
+  a second consumer (YAGNI).
 
 ## 1. Task modal — the integration point
 
-"**Task modal**" throughout this spec = the task view/edit modal built in
-Phase 2: opened by clicking a card on the board, implemented per the CLAUDE.md
-modal rule as an intercepting route (parallel `app/@modal` slot + `(.)`
-segment) with a standalone full page at the real task route as fallback. At
-plan time, locate it among Phase 2's deliverables (search for the `@modal`
-slot / the task route segment).
+"**Task modal**" throughout this spec = the task view/edit modal from Phase 2:
+opened by clicking a card on the board, full-screen shadcn `Dialog`,
+implemented as an intercepting route — `app/@modal/(.)tasks/[id]/page.tsx`
+with the standalone fallback page `app/tasks/[id]/page.tsx`, both rendering
+the shared `app/_components/task-modal-content` component (file names per the
+Phase 2 spec §1/§5; confirm exact names against the merged Phase 2 code at
+plan time).
 
-Phase 3's integration is deliberately one line per surface: the Task modal
-**and** its fallback page each render
-`<SubtaskSection taskId={task.id} initialSubtasks={subtasks} />`, where
-`subtasks` is loaded server-side (RSC) via the subtasks service. Everything
-else in this phase is self-contained.
+Phase 3's integration is **one line**: `task-modal-content` renders
+`<SubtaskSection taskId={task.id} />` below the task fields. Because both the
+intercepted modal and the fallback page render `task-modal-content`, subtasks
+appear on both surfaces automatically. Everything else in this phase is
+self-contained new code.
 
 ## 2. Ordering model
 
@@ -68,96 +73,104 @@ Invariant: **for any task, its subtasks' `position` values are exactly
 `0, 1, …, n-1`** (difference between neighbours is always 1). Every operation
 preserves it:
 
-- **Create** appends at the end: `position = getMaxPosition(taskId) + 1`
-  (`0` for the first subtask).
+- **Create** appends at the end:
+  `position = (getMaxPosition(taskId) ?? -1) + 1`.
 - **Move** from index `i` to index `j` (splice semantics): the mover takes
   `j`; if `j < i`, former positions `j..i-1` increment by 1; if `j > i`,
   former positions `i+1..j` decrement by 1; everything else is untouched.
   Example (the requirement's own): moving the subtask at position 5 to
   position 0 → former 0–4 become 1–5, the mover becomes 0, 6+ unchanged.
-  Implementation: in-memory splice + renumber `0..n-1`, persisted with
-  `subtasksRepository.updatePositions` (already a single transaction); only
-  rows whose position changed are written. Target index out of range is
-  **clamped** to `[0, n-1]`. `i === j` is a no-op (no writes).
-- **Delete** at index `i`: delete the row, then decrement positions of all
-  subtasks after it (renumber of the remaining list). The delete and the
-  renumber are two consecutive synchronous repository calls, not one
-  transaction: a crash between them leaves a gap that never affects ordering
-  (list is ordered by `position` asc) and is repaired by the next move. Not
-  worth pushing business logic into the repository for a local single-user
-  app.
-- **Rename / toggle completed** never touch `position`. Completed subtasks
-  stay in place (no auto-sort to the bottom).
+  `toPosition` out of range is **clamped** to `[0, n-1]`; `i === j` → no
+  writes.
+- **Delete** at index `i`: delete the row, then decrement positions of every
+  subtask after it. The delete and the renumber are two consecutive
+  synchronous repository calls, not one transaction: a crash between them
+  leaves a gap that never affects ordering (list is ordered by `position`
+  asc) and is repaired by the next move. Not worth pushing business logic
+  into the repository for a local single-user app.
+- **Title / done updates** never touch `position`. Done subtasks stay in
+  place (no auto-sort to the bottom).
 
 ## 3. Repository — no changes
 
 `shared/repositories/subtasks-repository.ts` already provides everything the
 service needs: `create`, `findById`, `listByTaskId` (ordered by `position`
-asc), `update` (patch: title / completed / position), `delete`,
-`getMaxPosition`, `updatePositions` (transactional batch).
+asc), `update` (patch: title / done / position), `delete`, `getMaxPosition`,
+`updatePositions` (transactional batch).
 
 ## 4. Service — `services/subtasks-service.ts`
 
-Synchronous (better-sqlite3, same rationale as Phase 1), pure orchestration of
-the repository plus the ordering rules of §2:
+Synchronous (better-sqlite3, same rationale as Phases 1–2). `subtasksService`
+owns the ordering rules of §2:
 
-| function | behavior |
+| method | behavior |
 |---|---|
 | `listSubtasks(taskId: string): Subtask[]` | `listByTaskId`, position asc |
 | `createSubtask(input: { taskId: string; title: string }): Subtask` | append at end (§2); unknown `taskId` → FK violation propagates as an error |
-| `renameSubtask(id: string, title: string): Subtask` | `update({ title })`; unknown id → throws `SubtaskNotFoundError` |
-| `setSubtaskCompleted(id: string, completed: boolean): Subtask` | `update({ completed })`; unknown id → throws `SubtaskNotFoundError` |
-| `moveSubtask(id: string, toPosition: number): Subtask[]` | splice + renumber per §2, returns the task's reordered list; unknown id → throws `SubtaskNotFoundError` |
+| `updateSubtask(id: string, patch: { title?: string; done?: boolean }): Subtask` | patches title/done only; unknown id → throws `SubtaskNotFoundError` |
+| `moveSubtask(id: string, toPosition: number): void` | loads the task's list, applies `computeSubtaskMove`, persists via `updatePositions` (one transaction); unknown id → throws `SubtaskNotFoundError` |
 | `deleteSubtask(id: string): void` | delete + tail renumber per §2; unknown id → throws `SubtaskNotFoundError` |
 
-`SubtaskNotFoundError extends Error` is defined next to the service (single
-consumer today). If Phase 2 established a shared not-found error convention,
-reuse it.
+### `computeSubtaskMove` (pure function, `services/compute-subtask-move.ts`)
 
-## 5. Controller — Server Actions
+`computeSubtaskMove(subtasks, id, toPosition) → SubtaskPositionUpdate[]`
+— the single-list analogue of Phase 2's `computeMove`: splice + renumber,
+returns **only rows whose position changed** (minimal transaction), clamps
+`toPosition`, returns `[]` for a same-spot move, throws
+`SubtaskNotFoundError` for an unknown id.
 
-One file of zod-v4-validated Server Actions in `app/` (co-located with
-Phase 2's task actions if a location convention exists by then; otherwise
-`app/actions/subtasks.ts`). No business logic — validate, call service, map
-errors. All actions return the same discriminated result shape as Phase 2's
-actions (align at plan time); on a caught known error (`SubtaskNotFoundError`,
-FK violation, zod failure) they return the error variant, never throw to the
-client.
+`SubtaskNotFoundError extends Error` lives with the service (same convention
+as Phase 2's `TaskNotFoundError`).
+
+## 5. Controller — Server Actions — `app/actions/subtasks.ts`
+
+Same controller pattern as Phase 2's `app/actions/tasks.ts`: parse with zod
+v4 → call the service → return
+`{ ok: true; data } | { ok: false; error: string }`; actions never throw to
+the client. Error mapping identical to Phase 2: zod failure → first issue
+message; `SubtaskNotFoundError` → its message; FK violation on create →
+readable "task not found" error; unknown errors → logged via pino and
+returned as a generic message.
 
 | action | input schema (zod v4) |
 |---|---|
-| `createSubtaskAction` | `{ taskId: string min 1, title: string trim min 1 max 200 }` |
-| `renameSubtaskAction` | `{ id: string min 1, title: string trim min 1 max 200 }` |
-| `toggleSubtaskAction` | `{ id: string min 1, completed: boolean }` |
-| `moveSubtaskAction` | `{ id: string min 1, toPosition: int ≥ 0 }` (clamped in service) |
-| `deleteSubtaskAction` | `{ id: string min 1 }` |
+| `getSubtasksAction` | `{ taskId: uuid }` → ok-variant data: `Subtask[]` |
+| `createSubtaskAction` | `{ taskId: uuid, title: string().trim().min(1).max(200) }` |
+| `updateSubtaskAction` | `{ id: uuid }` + partial `{ title (same constraints), done: boolean }`, at least one field present |
+| `moveSubtaskAction` | `{ id: uuid, toPosition: number().int().min(0) }` (clamped in service) |
+| `deleteSubtaskAction` | `{ id: uuid }` |
 
-No `revalidatePath`: subtask data on the client is owned by React Query
-(initial data comes from the RSC render; afterwards the query cache is
-authoritative; reload re-fetches via RSC). This also keeps the actions plain
-async functions that Vitest can call directly.
+No `revalidatePath` (client-only data, §"Decisions"), which also keeps the
+actions plain async functions that Vitest calls directly.
 
-## 6. UI — `components/subtasks/`
+## 6. UI — `app/_components/`
 
-Three pieces, client components, Tailwind only, shadcn from `shared/ui/`:
+Three client components, Tailwind only, shadcn from `shared/ui/` (Phase 2
+installs `input` and `sonner`; Phase 3 installs `checkbox` via the shadcn CLI
+— per CLAUDE.md, check shadcn before writing any custom control):
 
-- **`SubtaskSection`** — owns the data: `useQuery({ queryKey: ['subtasks',
-  taskId], initialData })` and the five mutations wrapping the Server
-  Actions. Toggle and reorder mutations are optimistic (`onMutate` snapshot →
-  rollback `onError` → invalidate `onSettled`); create / rename / delete
-  invalidate on success. Renders the add-subtask input (placeholder + Enter or
-  button submits, clears on success, disabled while pending) and the list.
-- **`SubtaskList`** — dnd-kit vertical sortable (`DndContext` +
-  `SortableContext` + `verticalListSortingStrategy`); on drag end computes the
-  target index and fires the move mutation with `{ id, toPosition }`.
-- **`SubtaskItem`** — one row: drag handle, shadcn `Checkbox` bound to
-  `completed`, title with inline edit (click title → input; Enter/blur saves
-  via rename mutation, Esc cancels; empty title cancels instead of saving),
-  delete button. Completed titles get muted/line-through styling. Rows carry
-  `data-testid` hooks for e2e (`subtask-item`, `subtask-drag-handle`, etc.).
-
-Errors from any mutation surface as an inline error message in the section
-(and the optimistic ones roll back); no toast library is introduced.
+- **`subtask-section.tsx`** — owns the data:
+  `useQuery({ queryKey: ['subtasks', taskId], queryFn: getSubtasksAction })`
+  plus the four mutations. Update / move / delete are optimistic per Phase 2's
+  recipe (`onMutate` cancel + snapshot + apply, `onError` rollback + sonner
+  toast, `onSettled` invalidate `['subtasks', taskId]`); create awaits the
+  action, then invalidates (toast on error). Renders the list and the
+  add-subtask input (placeholder + Enter or button submits, clears on
+  success, disabled while pending). Loading state: skeleton rows.
+- **`subtask-list.tsx`** — dnd-kit vertical sortable: own `DndContext` +
+  `SortableContext` (`verticalListSortingStrategy`) over subtask ids,
+  `PointerSensor` with `activationConstraint: { distance: 8 }` so clicks
+  still hit the checkbox/title (Phase 2 convention). The nested `DndContext`
+  also keeps subtask drags from ever reaching the board's context. On drag
+  end: derive the target index, fire the move mutation
+  `{ id, toPosition }`.
+- **`subtask-item.tsx`** — one row: drag handle, shadcn `Checkbox` bound to
+  `done`, title with inline edit (click title → input; Enter/blur saves via
+  the update mutation, Esc cancels; empty title cancels instead of saving),
+  delete button (no confirmation dialog — a subtask is one short line, unlike
+  task delete which cascades). Done titles get muted + line-through styling.
+  Rows carry `data-testid` hooks for e2e (`subtask-item`,
+  `subtask-drag-handle`, `subtask-checkbox`, `subtask-delete`).
 
 ## 7. Testing & Verification
 
@@ -169,56 +182,74 @@ Errors from any mutation surface as an inline error message in the section
 
 ### Unit/integration tests (Vitest) — `npm run test`
 
-- `services/__tests__/subtasks-service.test.ts` (temp SQLite via the shared
-  db-test-setup helper, real migrations)
-  - create appends densely: three creates → positions `0, 1, 2`
-  - create for unknown taskId → throws (FK enforced)
-  - rename updates title and nothing else; unknown id → `SubtaskNotFoundError`
-  - setSubtaskCompleted flips the flag both ways; unknown id → `SubtaskNotFoundError`
+- `services/__tests__/compute-subtask-move.test.ts` (pure, no DB)
   - move backward (the requirement's example): positions `0..5`, move the
-    subtask at 5 to 0 → it gets 0, former 0–4 become 1–5
-  - move forward: move 0 → 2 with four rows → order and dense invariant hold
-  - move with `toPosition` past the end (e.g. 99) → clamped to last index
-  - move to own index → no-op, positions unchanged
-  - delete middle row → remaining positions are `0..n-2` (tail decremented)
+    subtask at 5 to 0 → it gets 0, former 0–4 each `+1`; result dense `0..5`
+  - move forward: 0 → 2 with four rows → rows 1–2 each `-1`, mover gets 2;
+    dense afterwards
+  - minimal diff: returned array contains only rows whose position changed
+  - clamp: `toPosition` 99 in a 3-row list → treated as last index
+  - no-op: move to own index → empty array
+  - unknown id → throws `SubtaskNotFoundError`
+- `services/__tests__/subtasks-service.test.ts` (temp SQLite, same test-DB
+  setup as Phase 2's service tests)
+  - createSubtask appends densely: three creates → positions `0, 1, 2`;
+    first subtask of a task → 0
+  - createSubtask for unknown taskId → throws (FK enforced)
+  - updateSubtask patches title only / done only / both; position untouched
+  - updateSubtask / moveSubtask / deleteSubtask with unknown id →
+    `SubtaskNotFoundError`
+  - moveSubtask persists: list re-read in new order, dense `0..n-1`
+  - deleteSubtask middle row → remaining positions `0..n-2` (tail
+    decremented)
   - per-task scoping: two tasks with subtasks — operations on one never
     change the other's positions
-- `app/actions/__tests__/subtasks-actions.test.ts` (same temp-DB helper;
-  actions called directly as functions)
-  - `createSubtaskAction` happy path → success variant with the created row
-  - empty / whitespace title → error variant (zod), nothing inserted
-  - `moveSubtaskAction` with unknown id → error variant, no throw
-- Existing Phase-1 repository tests still pass after the db-test-setup helper
-  moves to `shared/testing/`.
+- `app/actions/__tests__/subtasks.test.ts` (actions called as plain
+  functions, temp SQLite)
+  - createSubtaskAction happy path → `{ok: true}`, row exists at the end
+  - createSubtaskAction empty/whitespace title → `{ok: false, error}`, no
+    row inserted
+  - createSubtaskAction unknown taskId → `{ok: false, error}` (mapped FK
+    violation, not a throw)
+  - updateSubtaskAction with neither title nor done → `{ok: false, error}`
+  - moveSubtaskAction unknown id / negative toPosition → `{ok: false,
+    error}`
+  - getSubtasksAction returns the list ordered by position
 
 ### E2E tests (Playwright) — `npm run test:e2e`
 
-- `e2e/subtasks.spec.ts` (each scenario: create a task via the Phase-2 UI,
-  open its Task modal)
-  - add: type a title in the add input, press Enter → subtask appears in the
-    list; reload → still there (roadmap checkpoint)
-  - complete: click a subtask's checkbox → it renders checked/struck-through;
-    reload → still completed (roadmap checkpoint)
+Reuses Phase 2's e2e infrastructure (isolated `.e2e` DB with migrations in
+`globalSetup`; mouse-step drag helper — dnd-kit needs real pointer events).
+
+- `e2e/subtasks.spec.ts` (each scenario: create a task via the UI, open its
+  Task modal)
+  - add: type a title in the add input, press Enter → subtask appears at the
+    bottom of the list; **reload → still there** (roadmap checkpoint)
+  - complete: click a subtask's checkbox → checked + struck-through;
+    **reload → still done** (roadmap checkpoint)
   - rename: click the title, edit, press Enter → new title shown; reload →
     persisted
-  - reorder: with three subtasks A, B, C, mouse-drag A's handle below B →
-    order B, A, C; reload → order persisted
-  - delete: click a subtask's delete button → row disappears; reload → still
-    gone (roadmap checkpoint)
+  - reorder: with three subtasks A, B, C, drag A's handle below B → order
+    B, A, C; reload → order persisted
+  - delete: click a subtask's delete button → row disappears; **reload →
+    still gone** (roadmap checkpoint)
+  - subtasks also render on the standalone page: `page.goto('/tasks/<id>')`
+    → the list is visible there
 
 ### Viewport screenshots
 
-- Command: `node .claude/skills/writing-verification-plan/scripts/screenshot.mjs <board url> <task page url>`
-  (dev server running; a task with several subtasks, some completed, prepared
-  first; the task page URL is the Phase-2 fallback route for the Task modal,
-  e.g. `http://localhost:3000/tasks/<id>` — confirm the segment at plan time)
+- Command (dev server running; first prepare a task with several subtasks,
+  some done):
+  `node .claude/skills/writing-verification-plan/scripts/screenshot.mjs http://localhost:3000/tasks/<id>`
 - Check: Read each PNG — subtask list intact at 375×812 and 1440×900, no
-  overflow/overlap, checkbox / handle / delete reachable, add input visible.
+  overflow/overlap, checkbox / drag handle / delete button reachable, add
+  input visible, done styling rendered.
 
 ### Skipped categories
 
-- API smoke (curl): skipped — Server Actions are not plain HTTP endpoints;
-  controller behavior is covered by the action-level Vitest cases and e2e.
+- API smoke (curl): skipped — Server Actions are not curl-addressable
+  endpoints (Phase 2 precedent); boundary validation is covered by the
+  action-level Vitest cases and e2e.
 - DB checks: skipped — no schema change in this phase; position/state
   persistence is asserted by the service integration tests and the e2e
   reload steps.
@@ -226,22 +257,25 @@ Errors from any mutation surface as an inline error message in the section
 ### Requirement coverage
 
 - Subtask belongs to one task → schema FK (Phase 1) + per-task scoping test
-- List visible inside the Task modal → every e2e scenario opens the modal
-- Toggle completed → service toggle test + e2e "complete" + screenshots
-  (completed styling)
-- Drag-and-drop reorder → e2e "reorder" + service move tests
+- List visible inside the Task modal → every e2e scenario opens the modal;
+  standalone-page e2e case covers the fallback surface
+- Mark done immediately (existing `done` field) → service update tests + e2e
+  "complete" + done styling in screenshots
+- Drag-and-drop reorder → e2e "reorder" + compute/service move tests
 - Position diff always 1 (dense invariant, incl. the move-5-to-0 example) →
-  service tests: dense create, move backward/forward, clamp, no-op
+  compute tests (backward/forward/clamp/no-op/minimal diff) + service move
+  persistence test
 - Decrement after delete → service "delete middle row" test
 - Create / delete / rename inside the modal → e2e add / delete / rename +
   action tests
-- Validation at the boundary → empty-title action test
+- Validation at the boundary, `{ok, error}` shape, no throws to client →
+  action-level Vitest cases
 - Roadmap checkpoint (add/complete/delete + reload persists) → the three
-  marked e2e scenarios
+  checkpoint-marked e2e steps
 
 ## Out of scope (later phases)
 
-AI decomposition autofill (Phase 6) — but it will reuse this phase's service
-and form. Status-update generation on completion (Phase 7). Subtask priority,
-description, nesting, due dates — excluded by DESIGN.md. Task-level progress
-indicator (e.g. "2/5") — not requested.
+AI decomposition autofill (Phase 6) — it will reuse this phase's service and
+add-subtask form. Status-update generation referencing subtasks (Phase 7).
+Subtask priority, description, nesting, due dates — excluded by DESIGN.md.
+Task-level progress indicator (e.g. "2/5") — not requested.
