@@ -1,6 +1,6 @@
 import type React from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 
 export default function Page(): React.JSX.Element {
   return (

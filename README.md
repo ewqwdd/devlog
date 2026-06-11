@@ -10,12 +10,12 @@ To add components to your app, run the following command:
 npx shadcn@latest add button
 ```
 
-This will place the ui components in the `components` directory.
+This will place the ui components in the `shared/ui` directory.
 
 ## Using components
 
 To use the components in your app, import them as follows:
 
 ```tsx
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 ```
