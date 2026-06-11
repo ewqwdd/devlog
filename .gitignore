@@ -42,3 +42,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# sqlite (local db + -journal/-wal sidecars)
+devlog.db*

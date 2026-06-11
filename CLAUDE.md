@@ -26,6 +26,8 @@ If a task seems to need a library outside this list, stop and ask before adding 
 - `npm run build` / `npm run start` — production build / serve
 - `npm run lint` — Biome check + banned-directive guard (`scripts/check-ts-directives.mjs`)
 - `npm run format` — Biome format (write)
+- `npm run db:generate` — generate a Drizzle migration from schema changes
+- `npm run db:migrate` — apply migrations (run once before first `npm run dev`)
 - `npm run typecheck` — `tsc --noEmit`
 - `npm run test` / `npm run test:watch` — Vitest
 - `npm run test:e2e` — Playwright (chromium)

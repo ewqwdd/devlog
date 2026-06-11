@@ -8,7 +8,7 @@ decomposition and the status generator come after.
 ## Progress
 
 - [x] Phase 0 — Project scaffold
-- [ ] Phase 1 — Data layer
+- [x] Phase 1 — Data layer
 - [ ] Phase 2 — Task CRUD + kanban board
 - [ ] Phase 3 — Subtasks
 - [ ] Phase 4 — Chat agent

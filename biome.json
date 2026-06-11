@@ -3,7 +3,7 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!!.claude", "!!.agents"]
+    "includes": ["**", "!!.claude", "!!.agents", "!!drizzle"]
   },
   "formatter": { "enabled": true, "indentStyle": "space" },
   "css": { "parser": { "tailwindDirectives": true } },
