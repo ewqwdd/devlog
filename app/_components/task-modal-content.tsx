@@ -1,16 +1,13 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notFound, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  deleteTaskAction,
-  getBoardAction,
-  moveTaskAction,
-  updateTaskAction,
-} from "@/app/actions/tasks";
+import { useBoardQuery } from "@/app/_components/hooks/use-board-query";
+import { useDeleteTaskMutation } from "@/app/_components/hooks/use-delete-task-mutation";
+import { useMoveTaskMutation } from "@/app/_components/hooks/use-move-task-mutation";
+import { useUpdateTaskMutation } from "@/app/_components/hooks/use-update-task-mutation";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type {
   Board,
@@ -40,7 +37,6 @@ import {
 } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
 
-const BOARD_KEY = ["board"] as const;
 const STATUS_LABEL: Record<TaskStatus, string> = {
   todo: "Todo",
   "in-progress": "In Progress",
@@ -71,18 +67,8 @@ export function TaskModalContent({
   id: string;
 }): React.JSX.Element | null {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const { data: board, isLoading } = useQuery({
-    queryKey: BOARD_KEY,
-    queryFn: async (): Promise<Board> => {
-      const result = await getBoardAction();
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-  });
+  const { data: board, isLoading } = useBoardQuery();
 
   const task = findTask(board, id);
   const [title, setTitle] = useState("");
@@ -100,53 +86,23 @@ export function TaskModalContent({
     }
   }, [task]);
 
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: BOARD_KEY });
-  };
-
-  const updateMutation = useMutation({
-    mutationFn: async (patch: {
-      title?: string;
-      description?: string;
-      priority?: TaskPriority;
-    }): Promise<Task> => {
-      const result = await updateTaskAction({ id, ...patch });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-    onSuccess: invalidate,
+  const updateMutation = useUpdateTaskMutation(id, {
     onError: (err: Error): void => {
       toast.error(err.message);
     },
   });
 
-  const statusMutation = useMutation({
-    mutationFn: async (toStatus: TaskStatus): Promise<Board> => {
-      const toIndex = board ? board[toStatus].length : 0;
-      const result = await moveTaskAction({ id, toStatus, toIndex });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-    onSuccess: invalidate,
+  const moveMutation = useMoveTaskMutation({
     onError: (err: Error): void => {
       toast.error(err.message);
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (): Promise<{ id: string }> => {
-      const result = await deleteTaskAction({ id });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
+  // No optimistic removal here: the modal calls notFound() as soon as the task
+  // disappears from the cached board, which would 404 the modal before
+  // router.back() runs.
+  const deleteMutation = useDeleteTaskMutation({
     onSuccess: (): void => {
-      invalidate();
       router.back();
     },
     onError: (err: Error): void => {
@@ -200,7 +156,12 @@ export function TaskModalContent({
           <Select
             value={task.status}
             onValueChange={(v): void => {
-              statusMutation.mutate(v as TaskStatus);
+              const toStatus = v as TaskStatus;
+              moveMutation.mutate({
+                id,
+                toStatus,
+                toIndex: board ? board[toStatus].length : 0,
+              });
             }}
           >
             <SelectTrigger data-testid="modal-status">
@@ -255,7 +216,7 @@ export function TaskModalContent({
               <AlertDialogAction
                 data-testid="modal-confirm-delete"
                 onClick={(): void => {
-                  deleteMutation.mutate();
+                  deleteMutation.mutate(id);
                 }}
               >
                 Delete

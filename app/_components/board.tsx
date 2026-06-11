@@ -10,17 +10,14 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BoardColumn } from "@/app/_components/board-column";
-import {
-  deleteTaskAction,
-  getBoardAction,
-  moveTaskAction,
-} from "@/app/actions/tasks";
+import { useBoardQuery } from "@/app/_components/hooks/use-board-query";
+import { useDeleteTaskMutation } from "@/app/_components/hooks/use-delete-task-mutation";
+import { useMoveTaskMutation } from "@/app/_components/hooks/use-move-task-mutation";
 import { TaskCard } from "@/components/task-card";
 import { applyMove } from "@/services/compute-move";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
@@ -38,7 +35,6 @@ import {
 import { Button } from "@/shared/ui/button";
 import { Skeleton } from "@/shared/ui/skeleton";
 
-const BOARD_KEY = ["board"] as const;
 const EMPTY_BOARD: BoardData = { todo: [], "in-progress": [], done: [] };
 
 function findColumn(board: BoardData, id: string): TaskStatus | undefined {
@@ -59,7 +55,6 @@ function indexInColumn(
 
 export function Board(): React.JSX.Element {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [dragBoard, setDragBoard] = useState<BoardData | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
@@ -68,83 +63,20 @@ export function Board(): React.JSX.Element {
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
 
-  const { data, isLoading } = useQuery({
-    queryKey: BOARD_KEY,
-    queryFn: async (): Promise<BoardData> => {
-      const result = await getBoardAction();
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-  });
+  const { data, isLoading } = useBoardQuery();
   const board = data ?? EMPTY_BOARD;
   const view = dragBoard ?? board;
 
-  const moveMutation = useMutation({
-    mutationFn: async (vars: {
-      id: string;
-      toStatus: TaskStatus;
-      toIndex: number;
-    }) => {
-      const result = await moveTaskAction(vars);
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-    onMutate: async (vars) => {
-      await queryClient.cancelQueries({ queryKey: BOARD_KEY });
-      const previous = queryClient.getQueryData<BoardData>(BOARD_KEY);
-      if (previous) {
-        queryClient.setQueryData<BoardData>(
-          BOARD_KEY,
-          applyMove(previous, vars.id, vars.toStatus, vars.toIndex),
-        );
-      }
-      return { previous };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(BOARD_KEY, context.previous);
-      }
+  const moveMutation = useMoveTaskMutation({
+    onError: () => {
       toast.error("Could not move the task");
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: BOARD_KEY });
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const result = await deleteTaskAction({ id });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: BOARD_KEY });
-      const previous = queryClient.getQueryData<BoardData>(BOARD_KEY);
-      if (previous) {
-        const next: BoardData = { todo: [], "in-progress": [], done: [] };
-        for (const status of TASK_STATUSES) {
-          next[status] = previous[status]
-            .filter((t) => t.id !== id)
-            .map((t, index) => ({ ...t, position: index }));
-        }
-        queryClient.setQueryData<BoardData>(BOARD_KEY, next);
-      }
-      return { previous };
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(BOARD_KEY, context.previous);
-      }
+  const deleteMutation = useDeleteTaskMutation({
+    optimistic: true,
+    onError: () => {
       toast.error("Could not delete the task");
-    },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: BOARD_KEY });
     },
   });
 

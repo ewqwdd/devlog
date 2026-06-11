@@ -1,11 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { createTaskAction } from "@/app/actions/tasks";
+import { useCreateTaskMutation } from "@/app/_components/hooks/use-create-task-mutation";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { TaskPriority, TaskStatus } from "@/shared/types/task";
 import { Button } from "@/shared/ui/button";
@@ -19,7 +18,6 @@ import {
 } from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
 
-const BOARD_KEY = ["board"] as const;
 const STATUS_LABEL: Record<TaskStatus, string> = {
   todo: "Todo",
   "in-progress": "In Progress",
@@ -33,28 +31,14 @@ const PRIORITY_LABEL: Record<TaskPriority, string> = {
 
 export function TaskForm(): React.JSX.Element {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<TaskStatus>("todo");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [error, setError] = useState<string | null>(null);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const result = await createTaskAction({
-        title,
-        description,
-        status,
-        priority,
-      });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
-      return result.data;
-    },
+  const mutation = useCreateTaskMutation({
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: BOARD_KEY });
       router.back();
     },
     onError: (err: Error) => {
@@ -70,7 +54,7 @@ export function TaskForm(): React.JSX.Element {
       setError("Title is required");
       return;
     }
-    mutation.mutate();
+    mutation.mutate({ title, description, status, priority });
   }
 
   return (
