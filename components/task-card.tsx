@@ -1,21 +1,40 @@
 "use client";
 
-import { RiDeleteBinLine } from "@remixicon/react";
+import {
+  type RemixiconComponentType,
+  RiArrowDownLine,
+  RiArrowUpDoubleLine,
+  RiDeleteBinLine,
+  RiEqualLine,
+} from "@remixicon/react";
 import type React from "react";
 import { cn } from "@/shared/lib/utils";
 import type { Task, TaskPriority } from "@/shared/types/task";
-import { Badge } from "@/shared/ui/badge";
 
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-};
+interface PriorityMeta {
+  readonly label: string;
+  readonly Icon: RemixiconComponentType;
+  readonly className: string;
+}
 
-const PRIORITY_CLASS: Record<TaskPriority, string> = {
-  low: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
-  medium: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  high: "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300",
+// Jira-style priority indicator: a directional, color-coded glyph rather than a
+// filled badge — reads faster on a dense board and keeps the card calm.
+const PRIORITY_META: Record<TaskPriority, PriorityMeta> = {
+  low: {
+    label: "Low",
+    Icon: RiArrowDownLine,
+    className: "text-sky-600 dark:text-sky-400",
+  },
+  medium: {
+    label: "Medium",
+    Icon: RiEqualLine,
+    className: "text-amber-600 dark:text-amber-400",
+  },
+  high: {
+    label: "High",
+    Icon: RiArrowUpDoubleLine,
+    className: "text-rose-600 dark:text-rose-400",
+  },
 };
 
 export function TaskCard({
@@ -27,22 +46,35 @@ export function TaskCard({
   onOpen?: () => void;
   onDelete?: () => void;
 }): React.JSX.Element {
+  const { label, Icon, className } = PRIORITY_META[task.priority];
+
   return (
     <div
       data-testid="task-card"
-      className="group relative rounded-lg border bg-card p-3 shadow-sm"
+      className="group relative rounded-lg border border-border/70 bg-card p-3 shadow-sm transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-md"
     >
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full pr-6 text-left text-sm font-medium"
+        className="block w-full pr-6 text-left text-sm font-medium leading-snug text-card-foreground"
       >
         {task.title}
       </button>
-      <div className="mt-2">
-        <Badge className={cn("text-xs", PRIORITY_CLASS[task.priority])}>
-          {PRIORITY_LABEL[task.priority]}
-        </Badge>
+      {task.description ? (
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {task.description}
+        </p>
+      ) : null}
+      <div className="mt-2.5 flex items-center gap-1.5">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-xs font-medium",
+            className,
+          )}
+        >
+          <Icon className="size-3.5" />
+          {label}
+        </span>
       </div>
       {onDelete ? (
         <button
@@ -50,7 +82,7 @@ export function TaskCard({
           aria-label="Delete task"
           data-testid="card-delete"
           onClick={onDelete}
-          className="absolute top-2 right-2 hidden rounded p-1 text-muted-foreground hover:bg-muted group-hover:block"
+          className="absolute top-2 right-2 hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground group-hover:block"
         >
           <RiDeleteBinLine className="size-4" />
         </button>

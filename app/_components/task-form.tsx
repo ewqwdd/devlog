@@ -60,7 +60,10 @@ export function TaskForm(): React.JSX.Element {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <label htmlFor="title" className="text-sm font-medium">
+        <label
+          htmlFor="title"
+          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+        >
           Title
         </label>
         <Input
@@ -77,7 +80,10 @@ export function TaskForm(): React.JSX.Element {
         ) : null}
       </div>
       <div className="flex flex-col gap-1">
-        <label htmlFor="description" className="text-sm font-medium">
+        <label
+          htmlFor="description"
+          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+        >
           Description
         </label>
         <Textarea
@@ -89,7 +95,9 @@ export function TaskForm(): React.JSX.Element {
       </div>
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Status</span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Status
+          </span>
           <Select
             value={status}
             onValueChange={(v): void => setStatus(v as TaskStatus)}
@@ -107,7 +115,9 @@ export function TaskForm(): React.JSX.Element {
           </Select>
         </div>
         <div className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Priority</span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Priority
+          </span>
           <Select
             value={priority}
             onValueChange={(v): void => setPriority(v as TaskPriority)}

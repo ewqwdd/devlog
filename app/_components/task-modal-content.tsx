@@ -153,7 +153,9 @@ export function TaskModalContent({
       />
       <div className="flex gap-3">
         <div className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Status</span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Status
+          </span>
           <Select
             value={task.status}
             onValueChange={(v): void => {
@@ -178,7 +180,9 @@ export function TaskModalContent({
           </Select>
         </div>
         <div className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Priority</span>
+          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            Priority
+          </span>
           <Select
             value={task.priority}
             onValueChange={(v): void => {
