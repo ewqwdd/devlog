@@ -14,6 +14,10 @@ export const subtasksRepository = {
     return db.insert(subtasks).values(data).returning().get();
   },
 
+  createMany(rows: NewSubtask[]): Subtask[] {
+    return db.insert(subtasks).values(rows).returning().all();
+  },
+
   findById(id: string): Subtask | undefined {
     return db.select().from(subtasks).where(eq(subtasks.id, id)).get();
   },

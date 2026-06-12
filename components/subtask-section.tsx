@@ -3,12 +3,16 @@
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DecomposePreview } from "@/components/decompose-preview";
 import { SubtaskList } from "@/components/subtask-list";
 import { useCreateSubtaskMutation } from "@/shared/hooks/use-create-subtask-mutation";
+import { useCreateSubtasksMutation } from "@/shared/hooks/use-create-subtasks-mutation";
+import { useDecomposeTask } from "@/shared/hooks/use-decompose-task";
 import { useDeleteSubtaskMutation } from "@/shared/hooks/use-delete-subtask-mutation";
 import { useMoveSubtaskMutation } from "@/shared/hooks/use-move-subtask-mutation";
 import { useSubtasksQuery } from "@/shared/hooks/use-subtasks-query";
 import { useUpdateSubtaskMutation } from "@/shared/hooks/use-update-subtask-mutation";
+import type { DecomposeStatus, DraftRow } from "@/shared/types/decompose";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -19,6 +23,10 @@ export function SubtaskSection({
   taskId: string;
 }): React.JSX.Element {
   const [newTitle, setNewTitle] = useState("");
+
+  const [status, setStatus] = useState<DecomposeStatus>("idle");
+  const [reasoning, setReasoning] = useState("");
+  const [drafts, setDrafts] = useState<DraftRow[]>([]);
 
   const { data: subtasks, isLoading } = useSubtasksQuery(taskId);
 
@@ -43,6 +51,61 @@ export function SubtaskSection({
     },
   });
 
+  const decomposeMutation = useDecomposeTask(taskId, {
+    onError: (): void => setStatus("error"),
+  });
+  const createSubtasksMutation = useCreateSubtasksMutation(taskId, {
+    onSuccess: (): void => clearDraft(),
+    onError: (): void => {
+      toast.error("Could not save the subtasks");
+    },
+  });
+
+  function clearDraft(): void {
+    setStatus("idle");
+    setDrafts([]);
+    setReasoning("");
+  }
+
+  function handleDecompose(): void {
+    setStatus("loading");
+    decomposeMutation.mutate(undefined, {
+      onSuccess: (data): void => {
+        setReasoning(data.reasoning);
+        if (data.subtasks.length === 0) {
+          setDrafts([]);
+          setStatus("refused");
+        } else {
+          setDrafts(
+            data.subtasks.map((s) => ({
+              key: crypto.randomUUID(),
+              title: s.title,
+            })),
+          );
+          setStatus("preview");
+        }
+      },
+    });
+  }
+
+  function handleRenameDraft(key: string, title: string): void {
+    setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, title } : d)));
+  }
+
+  function handleRemoveDraft(key: string): void {
+    setDrafts((prev) => prev.filter((d) => d.key !== key));
+  }
+
+  function handleSave(): void {
+    const titles = drafts
+      .map((d) => d.title.trim())
+      .filter((t) => t.length > 0);
+    if (titles.length === 0) {
+      return;
+    }
+    createSubtasksMutation.mutate(titles);
+  }
+
   function handleAdd(): void {
     const trimmed = newTitle.trim();
     if (trimmed.length === 0) {
@@ -64,11 +127,23 @@ export function SubtaskSection({
         <h3 className="text-[14px] font-semibold text-foreground/80">
           Subtasks
         </h3>
-        {subTotal > 0 ? (
-          <span className="text-[12.5px] font-semibold text-muted-foreground">
-            {subDone} of {subTotal} done
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          {subTotal > 0 ? (
+            <span className="text-[12.5px] font-semibold text-muted-foreground">
+              {subDone} of {subTotal} done
+            </span>
+          ) : null}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            data-testid="decompose-button"
+            disabled={status !== "idle"}
+            onClick={handleDecompose}
+          >
+            {status === "loading" ? "Decomposing…" : "✨ Decompose"}
+          </Button>
+        </div>
       </div>
 
       {subTotal > 0 ? (
@@ -79,6 +154,18 @@ export function SubtaskSection({
           />
         </div>
       ) : null}
+
+      <DecomposePreview
+        status={status}
+        reasoning={reasoning}
+        drafts={drafts}
+        isSaving={createSubtasksMutation.isPending}
+        onRenameDraft={handleRenameDraft}
+        onRemoveDraft={handleRemoveDraft}
+        onSave={handleSave}
+        onDiscard={clearDraft}
+        onDismiss={clearDraft}
+      />
 
       <div className="overflow-hidden rounded-[8px] border border-border">
         {isLoading ? (

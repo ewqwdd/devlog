@@ -279,3 +279,42 @@ export async function getPrioritizationModel(): Promise<LanguageModel> {
   }
   return anthropic(process.env["ANTHROPIC_MODEL"] ?? "claude-haiku-4-5");
 }
+
+function createMockDecomposeModel(
+  MockModel: typeof import("ai/test").MockLanguageModelV2,
+): LanguageModel {
+  return new MockModel({
+    // biome-ignore lint/nursery/useExplicitReturnType: callback argument — type is inferred from MockLanguageModelV2.doGenerate signature
+    doGenerate: async ({ prompt }) => {
+      const text = lastUserText(prompt).toLowerCase();
+      const object = text.includes("vague")
+        ? {
+            subtasks: [],
+            reasoning:
+              "The task is too vague to break down — add a clearer goal, scope, or acceptance criteria.",
+          }
+        : {
+            subtasks: [
+              { title: "Plan the approach" },
+              { title: "Implement the core" },
+              { title: "Write tests" },
+            ],
+            reasoning: "Split into plan, build, and verify steps.",
+          };
+      return {
+        content: [{ type: "text", text: JSON.stringify(object) }],
+        finishReason: "stop",
+        usage: USAGE,
+        warnings: [],
+      };
+    },
+  });
+}
+
+export async function getDecomposeModel(): Promise<LanguageModel> {
+  if (process.env["MOCK_LLM"] === "1") {
+    const { MockLanguageModelV2 } = await import("ai/test");
+    return createMockDecomposeModel(MockLanguageModelV2);
+  }
+  return anthropic(process.env["ANTHROPIC_MODEL"] ?? "claude-haiku-4-5");
+}

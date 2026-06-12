@@ -24,6 +24,22 @@ export const subtasksService = {
     return subtasksRepository.create({ ...input, position });
   },
 
+  createSubtasks(taskId: string, titles: string[]): Subtask[] {
+    const clean = titles
+      .map((title) => title.trim())
+      .filter((t) => t.length > 0);
+    if (clean.length === 0) {
+      return [];
+    }
+    const base = (subtasksRepository.getMaxPosition(taskId) ?? -1) + 1;
+    const rows = clean.map((title, index) => ({
+      taskId,
+      title,
+      position: base + index,
+    }));
+    return subtasksRepository.createMany(rows);
+  },
+
   updateSubtask(id: string, patch: UpdateSubtaskInput): Subtask {
     const updated = subtasksRepository.update(id, patch);
     if (!updated) {

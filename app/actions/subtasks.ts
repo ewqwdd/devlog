@@ -11,6 +11,10 @@ const titleSchema = z.string().trim().min(1, "Title is required").max(200);
 
 const getSubtasksSchema = z.object({ taskId: z.uuid() });
 const createSubtaskSchema = z.object({ taskId: z.uuid(), title: titleSchema });
+const createSubtasksSchema = z.object({
+  taskId: z.uuid(),
+  titles: z.array(titleSchema).min(1, "At least one subtask is required"),
+});
 const updateSubtaskSchema = z
   .object({
     id: z.uuid(),
@@ -64,6 +68,26 @@ export async function createSubtaskAction(
   }
   try {
     return { ok: true, data: subtasksService.createSubtask(parsed.data) };
+  } catch (error) {
+    return toErrorResult(error);
+  }
+}
+
+export async function createSubtasksAction(
+  input: unknown,
+): Promise<ActionResult<Subtask[]>> {
+  const parsed = createSubtasksSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: firstIssue(parsed.error) };
+  }
+  try {
+    return {
+      ok: true,
+      data: subtasksService.createSubtasks(
+        parsed.data.taskId,
+        parsed.data.titles,
+      ),
+    };
   } catch (error) {
     return toErrorResult(error);
   }
