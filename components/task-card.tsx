@@ -1,41 +1,9 @@
 "use client";
 
-import {
-  type RemixiconComponentType,
-  RiArrowDownLine,
-  RiArrowUpDoubleLine,
-  RiDeleteBinLine,
-  RiEqualLine,
-} from "@remixicon/react";
+import { RiDeleteBinLine } from "@remixicon/react";
 import type React from "react";
-import { cn } from "@/shared/lib/utils";
-import type { Task, TaskPriority } from "@/shared/types/task";
-
-interface PriorityMeta {
-  readonly label: string;
-  readonly Icon: RemixiconComponentType;
-  readonly className: string;
-}
-
-// Jira-style priority indicator: a directional, color-coded glyph rather than a
-// filled badge — reads faster on a dense board and keeps the card calm.
-const PRIORITY_META: Record<TaskPriority, PriorityMeta> = {
-  low: {
-    label: "Low",
-    Icon: RiArrowDownLine,
-    className: "text-sky-600 dark:text-sky-400",
-  },
-  medium: {
-    label: "Medium",
-    Icon: RiEqualLine,
-    className: "text-amber-600 dark:text-amber-400",
-  },
-  high: {
-    label: "High",
-    Icon: RiArrowUpDoubleLine,
-    className: "text-rose-600 dark:text-rose-400",
-  },
-};
+import { PriorityIcon } from "@/components/priority-icon";
+import type { Task } from "@/shared/types/task";
 
 export function TaskCard({
   task,
@@ -46,35 +14,20 @@ export function TaskCard({
   onOpen?: () => void;
   onDelete?: () => void;
 }): React.JSX.Element {
-  const { label, Icon, className } = PRIORITY_META[task.priority];
-
   return (
     <div
       data-testid="task-card"
-      className="group relative rounded-lg border border-border/70 bg-card p-3 shadow-sm transition-[border-color,box-shadow] hover:border-primary/40 hover:shadow-md"
+      className="group relative rounded-[6px] border border-border bg-card px-3 py-[11px] shadow-[0_1px_1px_rgba(9,30,66,0.12)] transition-[border-color,box-shadow] hover:border-[#c8cdd4] hover:shadow-[0_4px_8px_rgba(9,30,66,0.16)]"
     >
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full pr-6 text-left text-sm font-medium leading-snug text-card-foreground"
+        className="block w-full pr-5 text-left text-[14px] leading-[1.4] font-medium text-card-foreground"
       >
         {task.title}
       </button>
-      {task.description ? (
-        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-          {task.description}
-        </p>
-      ) : null}
-      <div className="mt-2.5 flex items-center gap-1.5">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 text-xs font-medium",
-            className,
-          )}
-        >
-          <Icon className="size-3.5" />
-          {label}
-        </span>
+      <div className="mt-2.5 flex items-center">
+        <PriorityIcon priority={task.priority} />
       </div>
       {onDelete ? (
         <button
@@ -82,7 +35,7 @@ export function TaskCard({
           aria-label="Delete task"
           data-testid="card-delete"
           onClick={onDelete}
-          className="absolute top-2 right-2 hidden rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground group-hover:block"
+          className="absolute top-1.5 right-1.5 hidden rounded-[4px] p-1 text-muted-foreground transition-colors group-hover:block hover:bg-muted hover:text-foreground"
         >
           <RiDeleteBinLine className="size-4" />
         </button>

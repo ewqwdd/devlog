@@ -10,7 +10,6 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { RiAddLine, RiStackLine } from "@remixicon/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type React from "react";
@@ -137,64 +136,56 @@ export function Board(): React.JSX.Element {
     }
   }
 
-  return (
-    <div className="flex min-h-svh flex-col bg-muted/30">
-      <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border/70 bg-background/85 px-6 py-3 backdrop-blur-sm">
-        <div className="flex items-center gap-2.5">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-            <RiStackLine className="size-5" />
-          </span>
-          <div className="flex flex-col leading-none">
-            <h1 className="font-heading text-base font-semibold tracking-tight">
-              DevLog
-            </h1>
-            <span className="mt-0.5 text-xs text-muted-foreground">Board</span>
-          </div>
-        </div>
-        <Button onClick={(): void => router.push("/tasks/new")}>
-          <RiAddLine />
-          New task
-        </Button>
-      </header>
+  const goToNewTask = (): void => router.push("/tasks/new");
 
-      <main className="flex flex-1 flex-col p-6">
-        {isLoading ? (
-          <div className="flex flex-1 gap-4">
-            {TASK_STATUSES.map((s) => (
-              <div
-                key={s}
-                className="flex-1 space-y-2 rounded-xl border border-border/60 bg-muted/40 p-2.5"
-              >
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex flex-1 gap-4">
-              {TASK_STATUSES.map((status) => (
-                <BoardColumn
-                  key={status}
-                  status={status}
-                  tasks={view[status]}
-                  onOpen={(id): void => router.push(`/tasks/${id}`)}
-                  onDelete={(id): void => setPendingDelete(id)}
-                />
+  return (
+    <div className="min-h-svh bg-background px-4 py-8 text-foreground sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-[1080px]">
+        <div className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_1px_3px_rgba(9,30,66,0.1)]">
+          <header className="flex items-center justify-between border-b border-border px-[22px] py-4">
+            <h1 className="text-[18px] font-bold tracking-tight">Devlog</h1>
+            <Button onClick={goToNewTask}>New task</Button>
+          </header>
+
+          {isLoading ? (
+            <div className="flex gap-3 px-[22px] pt-4 pb-6">
+              {TASK_STATUSES.map((s) => (
+                <div
+                  key={s}
+                  className="flex-1 space-y-2 rounded-[8px] bg-muted p-2"
+                >
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-16 w-full rounded-[6px]" />
+                  <Skeleton className="h-16 w-full rounded-[6px]" />
+                </div>
               ))}
             </div>
-            <DragOverlay>
-              {activeTask ? <TaskCard task={activeTask} /> : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </main>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex items-start gap-3 px-[22px] pt-4 pb-6">
+                {TASK_STATUSES.map((status) => (
+                  <BoardColumn
+                    key={status}
+                    status={status}
+                    tasks={view[status]}
+                    onOpen={(id): void => router.push(`/tasks/${id}`)}
+                    onDelete={(id): void => setPendingDelete(id)}
+                    onCreate={goToNewTask}
+                  />
+                ))}
+              </div>
+              <DragOverlay>
+                {activeTask ? <TaskCard task={activeTask} /> : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
+      </div>
 
       <AlertDialog
         open={pendingDelete !== null}
@@ -206,7 +197,9 @@ export function Board(): React.JSX.Element {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this task?</AlertDialogTitle>
+            <AlertDialogTitle className="font-bold">
+              Delete this task?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This cannot be undone.
             </AlertDialogDescription>
@@ -215,6 +208,7 @@ export function Board(): React.JSX.Element {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               data-testid="confirm-delete"
+              className="border-transparent !bg-destructive !text-white hover:!bg-[#ae2a1a]"
               onClick={(): void => {
                 if (pendingDelete) {
                   deleteMutation.mutate(pendingDelete);

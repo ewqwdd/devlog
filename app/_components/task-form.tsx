@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { PriorityIcon } from "@/components/priority-icon";
 import { useCreateTaskMutation } from "@/shared/hooks/use-create-task-mutation";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { TaskPriority, TaskStatus } from "@/shared/types/task";
@@ -28,6 +29,9 @@ const PRIORITY_LABEL: Record<TaskPriority, string> = {
   medium: "Medium",
   high: "High",
 };
+
+const LABEL_CLASS =
+  "mb-1.5 block text-[12.5px] font-semibold text-foreground/80";
 
 export function TaskForm(): React.JSX.Element {
   const router = useRouter();
@@ -58,87 +62,87 @@ export function TaskForm(): React.JSX.Element {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="title"
-          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-        >
-          Title
-        </label>
-        <Input
-          id="title"
-          data-testid="title-input"
-          value={title}
-          onChange={(e): void => setTitle(e.target.value)}
-          autoFocus
-        />
-        {error ? (
-          <p data-testid="form-error" className="text-sm text-destructive">
-            {error}
-          </p>
-        ) : null}
-      </div>
-      <div className="flex flex-col gap-1">
-        <label
-          htmlFor="description"
-          className="text-xs font-semibold tracking-wide text-muted-foreground uppercase"
-        >
-          Description
-        </label>
-        <Textarea
-          id="description"
-          data-testid="description-input"
-          value={description}
-          onChange={(e): void => setDescription(e.target.value)}
-        />
-      </div>
-      <div className="flex gap-3">
-        <div className="flex flex-1 flex-col gap-1">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Status
-          </span>
-          <Select
-            value={status}
-            onValueChange={(v): void => setStatus(v as TaskStatus)}
-          >
-            <SelectTrigger data-testid="status-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <form onSubmit={handleSubmit} className="flex flex-col">
+      <div className="flex flex-col gap-[18px] px-6 py-5">
+        <div>
+          <label htmlFor="title" className={LABEL_CLASS}>
+            Title <span className="text-destructive">*</span>
+          </label>
+          <Input
+            id="title"
+            data-testid="title-input"
+            value={title}
+            onChange={(e): void => setTitle(e.target.value)}
+            placeholder="Task title"
+            autoFocus
+          />
+          {error ? (
+            <p
+              data-testid="form-error"
+              className="mt-1.5 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          ) : null}
         </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Priority
-          </span>
-          <Select
-            value={priority}
-            onValueChange={(v): void => setPriority(v as TaskPriority)}
-          >
-            <SelectTrigger data-testid="priority-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {PRIORITY_LABEL[p]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div>
+          <label htmlFor="description" className={LABEL_CLASS}>
+            Description
+          </label>
+          <Textarea
+            id="description"
+            data-testid="description-input"
+            value={description}
+            placeholder="Add a description…"
+            onChange={(e): void => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-3.5">
+          <div className="flex-1">
+            <span className={LABEL_CLASS}>Status</span>
+            <Select
+              value={status}
+              onValueChange={(v): void => setStatus(v as TaskStatus)}
+            >
+              <SelectTrigger data-testid="status-select" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TASK_STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {STATUS_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1">
+            <span className={LABEL_CLASS}>Priority</span>
+            <Select
+              value={priority}
+              onValueChange={(v): void => setPriority(v as TaskPriority)}
+            >
+              <SelectTrigger data-testid="priority-select" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TASK_PRIORITIES.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    <span className="flex items-center gap-2">
+                      <PriorityIcon priority={p} />
+                      {PRIORITY_LABEL[p]}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-2.5 border-t border-border bg-muted/50 px-6 py-3.5">
         <Button
           type="button"
-          variant="outline"
+          variant="ghost"
           onClick={(): void => router.back()}
         >
           Cancel

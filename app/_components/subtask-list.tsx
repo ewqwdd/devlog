@@ -65,7 +65,7 @@ export function SubtaskList({
         items={subtasks.map((s) => s.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col">
           {subtasks.map((subtask) => (
             <SubtaskItem
               key={subtask.id}
