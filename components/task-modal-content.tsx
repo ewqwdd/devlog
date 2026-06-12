@@ -11,6 +11,7 @@ import { useBoardQuery } from "@/shared/hooks/use-board-query";
 import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
 import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
 import { useUpdateTaskMutation } from "@/shared/hooks/use-update-task-mutation";
+import { formatDate } from "@/shared/lib/format-date";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { Board, Task } from "@/shared/types/task";
 import { Button } from "@/shared/ui/button";
@@ -165,6 +166,17 @@ export function TaskModalContent({
                 }}
                 data-testid="modal-priority"
               />
+            </div>
+            <div className="flex min-h-10 items-center text-[13.5px]">
+              <span className="w-24 flex-shrink-0 text-muted-foreground">
+                Created
+              </span>
+              <time
+                dateTime={task.createdAt.toISOString()}
+                className="text-foreground/85"
+              >
+                {formatDate(task.createdAt)}
+              </time>
             </div>
           </div>
         </div>

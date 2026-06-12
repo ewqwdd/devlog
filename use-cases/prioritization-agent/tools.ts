@@ -5,9 +5,12 @@ import type { Board } from "@/shared/types/task";
 
 const listTasks = tool({
   description:
-    "List the whole board: every task in todo, in-progress, and done, each with id, title, description, status, priority, and createdAt. Takes no arguments.",
+    "List the actionable board: every task in todo and in-progress, each with id, title, description, status, priority, and createdAt. Done tasks are excluded — they are never candidates. Takes no arguments.",
   inputSchema: z.object({}),
-  execute: async (): Promise<Board> => tasksService.listBoard(),
+  execute: async (): Promise<Omit<Board, "done">> => {
+    const board = tasksService.listBoard();
+    return { todo: board.todo, "in-progress": board["in-progress"] };
+  },
 });
 
 export const recommendSchema = z.object({

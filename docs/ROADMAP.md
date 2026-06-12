@@ -14,6 +14,7 @@ decomposition comes after.
 - [x] Phase 4 — Chat agent
 - [x] Phase 5 — Prioritization agent
 - [x] Phase 6 — Task decomposition
+- [ ] Phase 6.1 — Refactor after human review
 - [ ] Phase 7 — Polish & handoff
 
 ## Phase 0 — Project scaffold
@@ -106,6 +107,23 @@ model covering all three board states (has in-progress / only todo / all done).
 
 **Checkpoint:** e2e with mock model: vague task → clarifying question; clear
 task → prefilled subtask form → confirm → subtasks saved.
+
+## Phase 6.1 — Refactor after human review
+
+Cleanups surfaced while reviewing the work so far:
+
+- Prioritization agent's `listTasks` tool returns only the actionable board (todo
+  + in-progress); done tasks are excluded entirely, since the agent never
+  considers them.
+- Tasks display their creation date (`createdAt`, immutable) on the frontend: on
+  the card (bottom-right, level with the priority icon) and in the task modal's
+  Details block.
+- Standalone task pages (`/tasks/new`, `/tasks/[id]`) get a top-left back button.
+  The intercepting-route modals are left untouched.
+
+**Checkpoint:** full gate green (typecheck, Biome, Vitest, Playwright); the
+prioritization tool's output omits done tasks, and the creation date renders on
+both the card and the modal.
 
 ## Phase 7 — Polish & handoff
 

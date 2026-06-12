@@ -3,6 +3,7 @@
 import { RiDeleteBinLine } from "@remixicon/react";
 import type React from "react";
 import { PriorityIcon } from "@/components/priority-icon";
+import { formatDate } from "@/shared/lib/format-date";
 import type { Task } from "@/shared/types/task";
 
 export function TaskCard({
@@ -26,8 +27,14 @@ export function TaskCard({
       >
         {task.title}
       </button>
-      <div className="mt-2.5 flex items-center">
+      <div className="mt-2.5 flex items-center justify-between">
         <PriorityIcon priority={task.priority} />
+        <time
+          dateTime={task.createdAt.toISOString()}
+          className="text-[11px] text-muted-foreground"
+        >
+          {formatDate(task.createdAt)}
+        </time>
       </div>
       {onDelete ? (
         <button
