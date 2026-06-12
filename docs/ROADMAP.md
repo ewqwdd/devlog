@@ -11,7 +11,7 @@ decomposition and the status generator come after.
 - [x] Phase 1 — Data layer
 - [x] Phase 2 — Task CRUD + kanban board
 - [x] Phase 3 — Subtasks
-- [ ] Phase 4 — Chat agent
+- [x] Phase 4 — Chat agent
 - [ ] Phase 5 — Prioritization agent
 - [ ] Phase 6 — Task decomposition
 - [ ] Phase 7 — Status-update generator + Status Log
