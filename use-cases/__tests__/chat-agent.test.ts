@@ -31,4 +31,25 @@ describe("streamChat — multi-step loop with the mock model", () => {
     expect(created).toBeDefined();
     expect(finalText).toContain(`/tasks/${created?.id}`);
   });
+
+  it("prioritization: 'what should I start with?' -> reply links the recommended task", async () => {
+    const inProgress = tasksService.createTask({
+      title: "Resume me",
+      description: "",
+      status: "in-progress",
+      priority: "medium",
+    });
+    tasksService.createTask({
+      title: "Later",
+      description: "",
+      status: "todo",
+      priority: "high",
+    });
+
+    const result = await streamChat([userMessage("what should I start with?")]);
+    await result.consumeStream();
+    const finalText = await result.text;
+
+    expect(finalText).toContain(`/tasks/${inProgress.id}`);
+  });
 });

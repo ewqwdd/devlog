@@ -110,6 +110,43 @@ function createMockChatModel(
         };
       }
 
+      if (text.includes("start with") || text.startsWith("prioritize:")) {
+        if (!secondStep) {
+          return {
+            stream: simulateReadableStream({
+              chunks: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-prioritize",
+                  toolName: "runPrioritization",
+                  input: "{}",
+                },
+                { type: "finish", finishReason: "tool-calls", usage: USAGE },
+              ],
+              initialDelayInMs: 150,
+              chunkDelayInMs: 50,
+            }),
+          };
+        }
+        const id = firstUuid(prompt);
+        return {
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "text-start", id: "text-1" },
+              {
+                type: "text-delta",
+                id: "text-1",
+                delta: `<p>Start with <a href="/tasks/${id}">this task</a>.</p>`,
+              },
+              { type: "text-end", id: "text-1" },
+              { type: "finish", finishReason: "stop", usage: USAGE },
+            ],
+            initialDelayInMs: 100,
+            chunkDelayInMs: 50,
+          }),
+        };
+      }
+
       if (!secondStep) {
         return {
           stream: simulateReadableStream({
