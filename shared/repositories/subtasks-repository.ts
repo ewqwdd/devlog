@@ -1,17 +1,16 @@
 import { asc, eq, max } from "drizzle-orm";
 import { db } from "@/shared/infra/db";
 import { subtasks } from "@/shared/infra/db/schema";
-import type { NewSubtask, Subtask } from "@/shared/types/subtask";
+import type {
+  NewSubtask,
+  Subtask,
+  SubtaskPositionUpdate,
+} from "@/shared/types/subtask";
 
 export interface SubtaskPatch {
   readonly title?: string;
   readonly done?: boolean;
   readonly position?: number;
-}
-
-export interface SubtaskPositionUpdate {
-  readonly id: string;
-  readonly position: number;
 }
 
 export const subtasksRepository = {

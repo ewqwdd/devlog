@@ -8,6 +8,7 @@ import { useBoardQuery } from "@/app/_components/hooks/use-board-query";
 import { useDeleteTaskMutation } from "@/app/_components/hooks/use-delete-task-mutation";
 import { useMoveTaskMutation } from "@/app/_components/hooks/use-move-task-mutation";
 import { useUpdateTaskMutation } from "@/app/_components/hooks/use-update-task-mutation";
+import { SubtaskSection } from "@/app/_components/subtask-section";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type {
   Board,
@@ -197,6 +198,7 @@ export function TaskModalContent({
           </Select>
         </div>
       </div>
+      <SubtaskSection taskId={task.id} />
       <div className="flex justify-end">
         <AlertDialog>
           <AlertDialogTrigger asChild>
