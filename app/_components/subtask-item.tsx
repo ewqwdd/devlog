@@ -74,13 +74,13 @@ export function SubtaskItem({
         opacity: isDragging ? 0.4 : 1,
       }}
       data-testid="subtask-item"
-      className="flex items-center gap-2 rounded-md border bg-card px-2 py-1.5"
+      className="flex items-center gap-2.5 border-b border-border bg-card px-3 py-2.5 transition-colors hover:bg-muted"
     >
       <button
         type="button"
         aria-label="Drag subtask"
         data-testid="subtask-drag-handle"
-        className="cursor-grab text-muted-foreground"
+        className="cursor-grab text-[#b3bac5]"
         {...attributes}
         {...listeners}
       >
@@ -90,6 +90,7 @@ export function SubtaskItem({
         data-testid="subtask-checkbox"
         checked={subtask.done}
         onCheckedChange={(checked): void => onToggle(checked === true)}
+        className="size-4 rounded-[4px] border-2 border-input bg-card data-checked:border-[#22a06b] data-checked:bg-[#22a06b]"
       />
       {isEditing ? (
         <input
@@ -105,7 +106,7 @@ export function SubtaskItem({
               cancelEditing();
             }
           }}
-          className="flex-1 rounded border bg-background px-1 text-sm"
+          className="flex-1 rounded-[4px] border border-input bg-card px-2 py-0.5 text-[14px] outline-none focus-visible:border-ring"
         />
       ) : (
         <button
@@ -113,7 +114,7 @@ export function SubtaskItem({
           data-testid="subtask-title"
           onClick={startEditing}
           className={cn(
-            "flex-1 text-left text-sm",
+            "flex-1 text-left text-[14px] text-foreground",
             subtask.done && "text-muted-foreground line-through",
           )}
         >
@@ -125,7 +126,7 @@ export function SubtaskItem({
         aria-label="Delete subtask"
         data-testid="subtask-delete"
         onClick={onDelete}
-        className="rounded p-1 text-muted-foreground hover:bg-muted"
+        className="rounded-[4px] p-1 text-muted-foreground transition-colors hover:bg-muted-foreground/10 hover:text-foreground"
       >
         <RiDeleteBinLine className="size-4" />
       </button>

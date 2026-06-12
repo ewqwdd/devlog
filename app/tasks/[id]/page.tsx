@@ -8,8 +8,10 @@ export default async function TaskPage({
 }): Promise<React.JSX.Element> {
   const { id } = await params;
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <TaskModalContent id={id} />
+    <div className="min-h-svh bg-background px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto w-full max-w-[920px] overflow-hidden rounded-[8px] border border-border bg-card shadow-[0_1px_3px_rgba(9,30,66,0.1)]">
+        <TaskModalContent id={id} />
+      </div>
     </div>
   );
 }

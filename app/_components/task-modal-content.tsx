@@ -5,6 +5,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { SubtaskSection } from "@/app/_components/subtask-section";
+import { PriorityIcon } from "@/components/priority-icon";
 import { useBoardQuery } from "@/shared/hooks/use-board-query";
 import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
 import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
@@ -119,117 +120,151 @@ export function TaskModalContent({
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <Input
-        data-testid="modal-title"
-        value={title}
-        onChange={(e): void => {
-          setTitle(e.target.value);
-        }}
-        onBlur={(): void => {
-          if (title !== task.title) {
-            updateMutation.mutate({ title });
-          }
-        }}
-        onKeyDown={(e): void => {
-          if (e.key === "Enter") {
-            e.currentTarget.blur();
-          }
-        }}
-        className="text-lg font-semibold"
-      />
-      <Textarea
-        data-testid="modal-description"
-        value={description}
-        onChange={(e): void => {
-          setDescription(e.target.value);
-        }}
-        onBlur={(): void => {
-          if (description !== task.description) {
-            updateMutation.mutate({ description });
-          }
-        }}
-        placeholder="Add a description…"
-      />
-      <div className="flex gap-3">
-        <div className="flex flex-1 flex-col gap-1">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Status
-          </span>
-          <Select
-            value={task.status}
-            onValueChange={(v): void => {
-              const toStatus = v as TaskStatus;
-              moveMutation.mutate({
-                id,
-                toStatus,
-                toIndex: board ? board[toStatus].length : 0,
-              });
+    <div className="flex flex-col md:flex-row">
+      {/* Main column */}
+      <div className="min-w-0 flex-[1.7] border-b border-border px-7 pt-6 pb-8 md:border-r md:border-b-0">
+        <Input
+          data-testid="modal-title"
+          value={title}
+          onChange={(e): void => {
+            setTitle(e.target.value);
+          }}
+          onBlur={(): void => {
+            if (title !== task.title) {
+              updateMutation.mutate({ title });
+            }
+          }}
+          onKeyDown={(e): void => {
+            if (e.key === "Enter") {
+              e.currentTarget.blur();
+            }
+          }}
+          className="h-auto w-full rounded-[4px] border-0 bg-transparent px-0 py-1 text-[22px] leading-[1.3] font-bold text-foreground shadow-none focus-visible:bg-card focus-visible:ring-2"
+        />
+
+        <div className="mt-6">
+          <h3 className="mb-2.5 text-[14px] font-semibold text-foreground/80">
+            Description
+          </h3>
+          <Textarea
+            data-testid="modal-description"
+            value={description}
+            onChange={(e): void => {
+              setDescription(e.target.value);
             }}
-          >
-            <SelectTrigger data-testid="modal-status">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onBlur={(): void => {
+              if (description !== task.description) {
+                updateMutation.mutate({ description });
+              }
+            }}
+            placeholder="Add a description…"
+            className="min-h-[48px] rounded-[4px] border-0 bg-transparent px-0 py-1.5 text-sm leading-[1.65] text-foreground/85 shadow-none focus-visible:bg-card focus-visible:ring-2"
+          />
         </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Priority
-          </span>
-          <Select
-            value={task.priority}
-            onValueChange={(v): void => {
-              updateMutation.mutate({ priority: v as TaskPriority });
-            }}
-          >
-            <SelectTrigger data-testid="modal-priority">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TASK_PRIORITIES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {PRIORITY_LABEL[p]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="mt-7">
+          <SubtaskSection taskId={task.id} />
         </div>
       </div>
-      <SubtaskSection taskId={task.id} />
-      <div className="flex justify-end">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" data-testid="modal-delete">
-              Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete this task?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                data-testid="modal-confirm-delete"
-                onClick={(): void => {
-                  deleteMutation.mutate(id);
+
+      {/* Sidebar */}
+      <div className="w-full flex-shrink-0 px-6 pt-5 pb-7 md:w-[320px]">
+        <Select
+          value={task.status}
+          onValueChange={(v): void => {
+            const toStatus = v as TaskStatus;
+            moveMutation.mutate({
+              id,
+              toStatus,
+              toIndex: board ? board[toStatus].length : 0,
+            });
+          }}
+        >
+          <SelectTrigger
+            data-testid="modal-status"
+            className="h-auto w-auto gap-2 rounded-[4px] border-0 bg-primary/10 px-[13px] py-[9px] text-[12px] font-bold tracking-[0.04em] text-primary uppercase hover:bg-primary/20 focus-visible:ring-2 [&_svg]:text-primary"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TASK_STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="mt-[18px] overflow-hidden rounded-[8px] border border-border">
+          <div className="border-b border-border bg-muted/50 px-3.5 py-3 text-[13px] font-bold text-foreground/80">
+            Details
+          </div>
+          <div className="px-3.5 pt-2 pb-3">
+            <div className="flex min-h-10 items-center text-[13.5px]">
+              <span className="w-24 flex-shrink-0 text-muted-foreground">
+                Priority
+              </span>
+              <Select
+                value={task.priority}
+                onValueChange={(v): void => {
+                  updateMutation.mutate({ priority: v as TaskPriority });
                 }}
               >
+                <SelectTrigger
+                  data-testid="modal-priority"
+                  className="h-auto w-auto gap-1.5 rounded-[4px] border-0 bg-transparent px-1.5 py-1 text-[13.5px] font-normal text-foreground hover:bg-muted focus-visible:ring-2"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TASK_PRIORITIES.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      <span className="flex items-center gap-2">
+                        <PriorityIcon priority={p} />
+                        {PRIORITY_LABEL[p]}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-3.5 flex justify-end">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                data-testid="modal-delete"
+                className="border border-destructive/30 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
                 Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="font-bold">
+                  Delete this task?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  data-testid="modal-confirm-delete"
+                  className="border-transparent !bg-destructive !text-white hover:!bg-[#ae2a1a]"
+                  onClick={(): void => {
+                    deleteMutation.mutate(id);
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </div>
   );
