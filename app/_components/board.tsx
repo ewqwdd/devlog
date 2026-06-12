@@ -139,53 +139,49 @@ export function Board(): React.JSX.Element {
   const goToNewTask = (): void => router.push("/tasks/new");
 
   return (
-    <div className="min-h-svh bg-background px-4 py-8 text-foreground sm:px-6 sm:py-10">
-      <div className="mx-auto w-full max-w-[1080px]">
-        <div className="overflow-hidden rounded-[10px] border border-border bg-card shadow-[0_1px_3px_rgba(9,30,66,0.1)]">
-          <header className="flex items-center justify-between border-b border-border px-[22px] py-4">
-            <h1 className="text-[18px] font-bold tracking-tight">Devlog</h1>
-            <Button onClick={goToNewTask}>New task</Button>
-          </header>
+    <div className="flex min-h-svh flex-col bg-background text-foreground">
+      <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3.5">
+        <h1 className="text-[18px] font-bold tracking-tight">Devlog</h1>
+        <Button onClick={goToNewTask}>New task</Button>
+      </header>
 
-          {isLoading ? (
-            <div className="flex gap-3 px-[22px] pt-4 pb-6">
-              {TASK_STATUSES.map((s) => (
-                <div
-                  key={s}
-                  className="flex-1 space-y-2 rounded-[8px] bg-muted p-2"
-                >
-                  <Skeleton className="h-5 w-20" />
-                  <Skeleton className="h-16 w-full rounded-[6px]" />
-                  <Skeleton className="h-16 w-full rounded-[6px]" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
+      {isLoading ? (
+        <div className="flex flex-1 gap-3 p-6">
+          {TASK_STATUSES.map((s) => (
+            <div
+              key={s}
+              className="flex-1 space-y-2 rounded-[8px] bg-muted p-2"
             >
-              <div className="flex items-start gap-3 px-[22px] pt-4 pb-6">
-                {TASK_STATUSES.map((status) => (
-                  <BoardColumn
-                    key={status}
-                    status={status}
-                    tasks={view[status]}
-                    onOpen={(id): void => router.push(`/tasks/${id}`)}
-                    onDelete={(id): void => setPendingDelete(id)}
-                    onCreate={goToNewTask}
-                  />
-                ))}
-              </div>
-              <DragOverlay>
-                {activeTask ? <TaskCard task={activeTask} /> : null}
-              </DragOverlay>
-            </DndContext>
-          )}
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-16 w-full rounded-[6px]" />
+              <Skeleton className="h-16 w-full rounded-[6px]" />
+            </div>
+          ))}
         </div>
-      </div>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <main className="flex flex-1 items-stretch gap-3 p-6">
+            {TASK_STATUSES.map((status) => (
+              <BoardColumn
+                key={status}
+                status={status}
+                tasks={view[status]}
+                onOpen={(id): void => router.push(`/tasks/${id}`)}
+                onDelete={(id): void => setPendingDelete(id)}
+                onCreate={goToNewTask}
+              />
+            ))}
+          </main>
+          <DragOverlay>
+            {activeTask ? <TaskCard task={activeTask} /> : null}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       <AlertDialog
         open={pendingDelete !== null}
