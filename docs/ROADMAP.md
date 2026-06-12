@@ -13,7 +13,7 @@ decomposition and the status generator come after.
 - [x] Phase 3 — Subtasks
 - [x] Phase 4 — Chat agent
 - [x] Phase 5 — Prioritization agent
-- [ ] Phase 6 — Task decomposition
+- [x] Phase 6 — Task decomposition
 - [ ] Phase 7 — Polish & handoff
 - [ ] Phase 8 — Status-update generator + Status Log
 
