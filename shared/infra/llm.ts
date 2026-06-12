@@ -110,6 +110,43 @@ function createMockChatModel(
         };
       }
 
+      if (text.includes("start with") || text.startsWith("prioritize:")) {
+        if (!secondStep) {
+          return {
+            stream: simulateReadableStream({
+              chunks: [
+                {
+                  type: "tool-call",
+                  toolCallId: "call-prioritize",
+                  toolName: "runPrioritization",
+                  input: "{}",
+                },
+                { type: "finish", finishReason: "tool-calls", usage: USAGE },
+              ],
+              initialDelayInMs: 150,
+              chunkDelayInMs: 50,
+            }),
+          };
+        }
+        const id = firstUuid(prompt);
+        return {
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "text-start", id: "text-1" },
+              {
+                type: "text-delta",
+                id: "text-1",
+                delta: `<p>Start with <a href="/tasks/${id}">this task</a>.</p>`,
+              },
+              { type: "text-end", id: "text-1" },
+              { type: "finish", finishReason: "stop", usage: USAGE },
+            ],
+            initialDelayInMs: 100,
+            chunkDelayInMs: 50,
+          }),
+        };
+      }
+
       if (!secondStep) {
         return {
           stream: simulateReadableStream({
@@ -152,6 +189,93 @@ export async function getChatModel(): Promise<LanguageModel> {
   if (process.env["MOCK_LLM"] === "1") {
     const { MockLanguageModelV2 } = await import("ai/test");
     return createMockChatModel(MockLanguageModelV2);
+  }
+  return anthropic(process.env["ANTHROPIC_MODEL"] ?? "claude-haiku-4-5");
+}
+
+// First in-progress task's id, else first todo task's id, else "".
+// The board JSON is embedded in the listTasks tool result inside the prompt.
+function pickRecommendedId(prompt: unknown): string {
+  const json = JSON.stringify(prompt);
+  const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+  const inProgress = json.match(
+    new RegExp(`"id":"(${uuid})"[^}]*?"status":"in-progress"`, "i"),
+  );
+  if (inProgress?.[1]) {
+    return inProgress[1];
+  }
+  const todo = json.match(
+    new RegExp(`"id":"(${uuid})"[^}]*?"status":"todo"`, "i"),
+  );
+  return todo?.[1] ?? "";
+}
+
+function countToolMessages(prompt: unknown): number {
+  return isMessageArray(prompt)
+    ? prompt.filter((message) => message.role === "tool").length
+    : 0;
+}
+
+function createMockPrioritizationModel(
+  MockModel: typeof import("ai/test").MockLanguageModelV2,
+): LanguageModel {
+  return new MockModel({
+    // biome-ignore lint/nursery/useExplicitReturnType: callback argument — type is inferred from MockLanguageModelV2.doGenerate signature
+    doGenerate: async ({ prompt }) => {
+      const toolMessages = countToolMessages(prompt);
+
+      // Step 1: read the board.
+      if (toolMessages === 0) {
+        return {
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call-list",
+              toolName: "listTasks",
+              input: "{}",
+            },
+          ],
+          finishReason: "tool-calls",
+          usage: USAGE,
+          warnings: [],
+        };
+      }
+
+      // Step 2: recommend by board position (first in-progress, else first todo).
+      if (toolMessages === 1) {
+        return {
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: "call-recommend",
+              toolName: "recommend",
+              input: JSON.stringify({
+                taskId: pickRecommendedId(prompt),
+                reasoning: "Recommended by board position (offline mock).",
+              }),
+            },
+          ],
+          finishReason: "tool-calls",
+          usage: USAGE,
+          warnings: [],
+        };
+      }
+
+      // Step 3+: recommend already executed — end the loop.
+      return {
+        content: [{ type: "text", text: "" }],
+        finishReason: "stop",
+        usage: USAGE,
+        warnings: [],
+      };
+    },
+  });
+}
+
+export async function getPrioritizationModel(): Promise<LanguageModel> {
+  if (process.env["MOCK_LLM"] === "1") {
+    const { MockLanguageModelV2 } = await import("ai/test");
+    return createMockPrioritizationModel(MockLanguageModelV2);
   }
   return anthropic(process.env["ANTHROPIC_MODEL"] ?? "claude-haiku-4-5");
 }

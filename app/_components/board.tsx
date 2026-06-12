@@ -16,6 +16,7 @@ import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BoardColumn } from "@/app/_components/board-column";
+import { PrioritizeButton } from "@/app/_components/prioritize-button";
 import { TaskCard } from "@/components/task-card";
 import { applyMove } from "@/services/compute-move";
 import { BOARD_KEY, useBoardQuery } from "@/shared/hooks/use-board-query";
@@ -133,7 +134,10 @@ export function Board(): React.JSX.Element {
     <div className="flex min-h-svh flex-col bg-background text-foreground">
       <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-6 py-3.5">
         <h1 className="text-[18px] font-bold tracking-tight">Devlog</h1>
-        <Button onClick={goToNewTask}>New task</Button>
+        <div className="flex items-center gap-2">
+          <PrioritizeButton />
+          <Button onClick={goToNewTask}>New task</Button>
+        </div>
       </header>
 
       {isLoading ? (

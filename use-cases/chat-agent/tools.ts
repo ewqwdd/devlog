@@ -7,8 +7,10 @@ import { tasksService } from "@/services/tasks-service";
 import { logger } from "@/shared/lib/logger";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { ActionResult } from "@/shared/types/action-result";
+import type { PrioritizationResult } from "@/shared/types/prioritization";
 import type { Subtask } from "@/shared/types/subtask";
 import type { Task } from "@/shared/types/task";
+import { runPrioritization as runPrioritizationAgent } from "@/use-cases/prioritization-agent";
 
 const statusEnum = z.enum(TASK_STATUSES);
 const priorityEnum = z.enum(TASK_PRIORITIES);
@@ -236,11 +238,10 @@ const deleteSubtask = tool({
 
 const runPrioritization = tool({
   description:
-    "Reprioritize the whole board with AI. Not available yet (Phase 5).",
+    "Recommend the single best task to start working on right now, with reasoning. Returns the recommended task (or null if there is nothing to do) plus the reasoning. Takes no arguments.",
   inputSchema: z.object({}),
-  execute: async (): Promise<ActionResult<string>> => {
-    return { ok: true, data: "Prioritization is not available yet." };
-  },
+  execute: async (): Promise<ActionResult<PrioritizationResult>> =>
+    runPrioritizationAgent(),
 });
 
 export const chatTools = {
