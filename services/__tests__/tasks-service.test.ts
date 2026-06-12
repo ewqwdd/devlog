@@ -210,3 +210,23 @@ describe("tasksService.listBoard", () => {
     expect(board.done).toEqual([]);
   });
 });
+
+describe("tasksService.getTask", () => {
+  it("returns the task when it exists", () => {
+    const created = tasksService.createTask({
+      title: "find me",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+    expect(tasksService.getTask(created.id)?.id).toBe(created.id);
+  });
+
+  it("returns null for an unknown id", () => {
+    expect(tasksService.getTask("missing")).toBeNull();
+  });
+
+  it("returns null for an empty id", () => {
+    expect(tasksService.getTask("")).toBeNull();
+  });
+});

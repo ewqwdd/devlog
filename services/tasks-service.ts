@@ -72,4 +72,8 @@ export const tasksService = {
   listBoard(): Board {
     return buildBoard();
   },
+
+  getTask(id: string): Task | null {
+    return tasksRepository.findById(id) ?? null;
+  },
 };
