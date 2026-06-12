@@ -12,10 +12,10 @@ decomposition and the status generator come after.
 - [x] Phase 2 — Task CRUD + kanban board
 - [x] Phase 3 — Subtasks
 - [x] Phase 4 — Chat agent
-- [ ] Phase 5 — Prioritization agent
+- [x] Phase 5 — Prioritization agent
 - [ ] Phase 6 — Task decomposition
-- [ ] Phase 7 — Status-update generator + Status Log
-- [ ] Phase 8 — Polish & handoff
+- [ ] Phase 7 — Polish & handoff
+- [ ] Phase 8 — Status-update generator + Status Log
 
 ## Phase 0 — Project scaffold
 
@@ -108,7 +108,17 @@ model covering all three board states (has in-progress / only todo / all done).
 **Checkpoint:** e2e with mock model: vague task → clarifying question; clear
 task → prefilled subtask form → confirm → subtasks saved.
 
-## Phase 7 — Status-update generator (feature C) + Status Log
+## Phase 7 — Polish & handoff
+
+- README: setup, `MOCK_LLM` usage, what's out of scope (per DESIGN.md §8).
+- Full gate green: typecheck, Biome, Vitest, Playwright.
+- Empty-board / error states reviewed (LLM call failure surfaces a readable
+  error in chat, not a crash).
+
+**Checkpoint:** fresh clone → `npm install && npm run dev` → all features work
+with a provided key; full test suite passes.
+
+## Phase 8 — Status-update generator (feature C) + Status Log
 
 - Backend catches the `status → done` transition (use-case orchestrating tasks
   + status-updates services), passes `taskId` to the agent.
@@ -118,13 +128,3 @@ task → prefilled subtask form → confirm → subtasks saved.
 
 **Checkpoint:** drag a card to done → a status update appears on the Status Log
 page; moving done → done or done → todo does not generate one.
-
-## Phase 8 — Polish & handoff
-
-- README: setup, `MOCK_LLM` usage, what's out of scope (per DESIGN.md §8).
-- Full gate green: typecheck, Biome, Vitest, Playwright.
-- Empty-board / error states reviewed (LLM call failure surfaces a readable
-  error in chat, not a crash).
-
-**Checkpoint:** fresh clone → `npm install && npm run dev` → all features work
-with a provided key; full test suite passes.
