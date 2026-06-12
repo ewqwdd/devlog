@@ -1,11 +1,7 @@
-import { asc, eq, max } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lt, lte, max, sql } from "drizzle-orm";
 import { db } from "@/shared/infra/db";
 import { subtasks } from "@/shared/infra/db/schema";
-import type {
-  NewSubtask,
-  Subtask,
-  SubtaskPositionUpdate,
-} from "@/shared/types/subtask";
+import type { NewSubtask, Subtask } from "@/shared/types/subtask";
 
 export interface SubtaskPatch {
   readonly title?: string;
@@ -54,14 +50,55 @@ export const subtasksRepository = {
     return row?.value ?? null;
   },
 
-  updatePositions(updates: ReadonlyArray<SubtaskPositionUpdate>): void {
+  /** After a row leaves `position` in a task, pull its followers down by one. */
+  closeGapAfterDelete(taskId: string, position: number): void {
+    db.update(subtasks)
+      .set({ position: sql`${subtasks.position} - 1` })
+      .where(and(eq(subtasks.taskId, taskId), gt(subtasks.position, position)))
+      .run();
+  },
+
+  /**
+   * Reorder via relative shifts: one ranged UPDATE closes/opens the gap, a
+   * second places the moved row. Callers pass an already-clamped position.
+   */
+  move(
+    id: string,
+    taskId: string,
+    fromPosition: number,
+    toPosition: number,
+  ): void {
+    if (fromPosition === toPosition) {
+      return;
+    }
     db.transaction((tx) => {
-      for (const update of updates) {
+      if (fromPosition < toPosition) {
         tx.update(subtasks)
-          .set({ position: update.position })
-          .where(eq(subtasks.id, update.id))
+          .set({ position: sql`${subtasks.position} - 1` })
+          .where(
+            and(
+              eq(subtasks.taskId, taskId),
+              gt(subtasks.position, fromPosition),
+              lte(subtasks.position, toPosition),
+            ),
+          )
+          .run();
+      } else {
+        tx.update(subtasks)
+          .set({ position: sql`${subtasks.position} + 1` })
+          .where(
+            and(
+              eq(subtasks.taskId, taskId),
+              gte(subtasks.position, toPosition),
+              lt(subtasks.position, fromPosition),
+            ),
+          )
           .run();
       }
+      tx.update(subtasks)
+        .set({ position: toPosition })
+        .where(eq(subtasks.id, id))
+        .run();
     });
   },
 };

@@ -1,10 +1,9 @@
-import { computeMove } from "@/services/compute-move";
 import { TaskNotFoundError } from "@/services/task-not-found-error";
+import { clamp } from "@/shared/lib/clamp";
 import { tasksRepository } from "@/shared/repositories/tasks-repository";
 import type {
   Board,
   Task,
-  TaskPositionUpdate,
   TaskPriority,
   TaskStatus,
 } from "@/shared/types/task";
@@ -45,10 +44,17 @@ export const tasksService = {
   },
 
   moveTask(id: string, toStatus: TaskStatus, toIndex: number): void {
-    const updates = computeMove(buildBoard(), id, toStatus, toIndex);
-    if (updates.length > 0) {
-      tasksRepository.updatePositions(updates);
+    const task = tasksRepository.findById(id);
+    if (!task) {
+      throw new TaskNotFoundError(id);
     }
+    // Columns stay dense, so the target's max position is its last index.
+    const maxTarget = tasksRepository.getMaxPosition(toStatus) ?? -1;
+    const toPosition =
+      toStatus === task.status
+        ? clamp(toIndex, 0, maxTarget) // same column: last valid index
+        : clamp(toIndex, 0, maxTarget + 1); // other column: may append at end
+    tasksRepository.move(id, task.status, task.position, toStatus, toPosition);
   },
 
   deleteTask(id: string): void {
@@ -57,16 +63,7 @@ export const tasksService = {
       throw new TaskNotFoundError(id);
     }
     tasksRepository.delete(id);
-    const remaining = tasksRepository.listByStatus(task.status);
-    const updates: TaskPositionUpdate[] = [];
-    remaining.forEach((t, index) => {
-      if (t.position !== index) {
-        updates.push({ id: t.id, position: index, status: t.status });
-      }
-    });
-    if (updates.length > 0) {
-      tasksRepository.updatePositions(updates);
-    }
+    tasksRepository.closeGapAfterDelete(task.status, task.position);
   },
 
   listBoard(): Board {

@@ -59,24 +59,66 @@ describe("tasksRepository", () => {
     expect(tasksRepository.getMaxPosition("todo")).toBe(2);
   });
 
-  it("updatePositions renumbers and moves across statuses in one call", () => {
+  it("move reorders within a column (down) keeping it dense", () => {
     const a = tasksRepository.create({
       title: "a",
       status: "todo",
       position: 0,
     });
+    tasksRepository.create({ title: "b", status: "todo", position: 1 });
+    tasksRepository.create({ title: "c", status: "todo", position: 2 });
+    tasksRepository.move(a.id, "todo", 0, "todo", 2);
+    const todo = tasksRepository.listByStatus("todo");
+    expect(todo.map((t) => t.title)).toEqual(["b", "c", "a"]);
+    expect(todo.map((t) => t.position)).toEqual([0, 1, 2]);
+  });
+
+  it("move reorders within a column (up) keeping it dense", () => {
+    tasksRepository.create({ title: "a", status: "todo", position: 0 });
+    tasksRepository.create({ title: "b", status: "todo", position: 1 });
+    const c = tasksRepository.create({
+      title: "c",
+      status: "todo",
+      position: 2,
+    });
+    tasksRepository.move(c.id, "todo", 2, "todo", 0);
+    const todo = tasksRepository.listByStatus("todo");
+    expect(todo.map((t) => t.title)).toEqual(["c", "a", "b"]);
+    expect(todo.map((t) => t.position)).toEqual([0, 1, 2]);
+  });
+
+  it("move across statuses closes the source gap and opens the target gap", () => {
+    tasksRepository.create({ title: "a", status: "todo", position: 0 });
     const b = tasksRepository.create({
       title: "b",
       status: "todo",
       position: 1,
     });
-    tasksRepository.updatePositions([
-      { id: a.id, position: 1, status: "todo" },
-      { id: b.id, position: 0, status: "in-progress" },
-    ]);
-    expect(tasksRepository.findById(a.id)?.position).toBe(1);
-    const movedB = tasksRepository.findById(b.id);
-    expect(movedB?.status).toBe("in-progress");
-    expect(movedB?.position).toBe(0);
+    tasksRepository.create({ title: "c", status: "todo", position: 2 });
+    tasksRepository.create({ title: "x", status: "in-progress", position: 0 });
+    tasksRepository.create({ title: "y", status: "in-progress", position: 1 });
+    tasksRepository.move(b.id, "todo", 1, "in-progress", 1);
+    const todo = tasksRepository.listByStatus("todo");
+    expect(todo.map((t) => t.title)).toEqual(["a", "c"]);
+    expect(todo.map((t) => t.position)).toEqual([0, 1]);
+    const inProgress = tasksRepository.listByStatus("in-progress");
+    expect(inProgress.map((t) => t.title)).toEqual(["x", "b", "y"]);
+    expect(inProgress.map((t) => t.position)).toEqual([0, 1, 2]);
+    expect(tasksRepository.findById(b.id)?.status).toBe("in-progress");
+  });
+
+  it("closeGapAfterDelete pulls a column's followers down by one", () => {
+    tasksRepository.create({ title: "a", status: "todo", position: 0 });
+    const b = tasksRepository.create({
+      title: "b",
+      status: "todo",
+      position: 1,
+    });
+    tasksRepository.create({ title: "c", status: "todo", position: 2 });
+    tasksRepository.delete(b.id);
+    tasksRepository.closeGapAfterDelete("todo", b.position);
+    const todo = tasksRepository.listByStatus("todo");
+    expect(todo.map((t) => t.title)).toEqual(["a", "c"]);
+    expect(todo.map((t) => t.position)).toEqual([0, 1]);
   });
 });

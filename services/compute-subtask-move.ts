@@ -1,11 +1,10 @@
 import { SubtaskNotFoundError } from "@/services/subtask-not-found-error";
-import type { Subtask, SubtaskPositionUpdate } from "@/shared/types/subtask";
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp } from "@/shared/lib/clamp";
+import type { Subtask } from "@/shared/types/subtask";
 
 // Returns a new, fully dense list with the moved subtask at its new spot.
+// Used client-side for optimistic reordering; the server persists via
+// relative shifts in subtasksRepository.move.
 export function applySubtaskMove(
   subtasks: readonly Subtask[],
   id: string,
@@ -23,21 +22,4 @@ export function applySubtaskMove(
   }
   next.splice(to, 0, moved);
   return next.map((subtask, index) => ({ ...subtask, position: index }));
-}
-
-// Minimal transaction: only rows whose position actually changed.
-export function computeSubtaskMove(
-  subtasks: readonly Subtask[],
-  id: string,
-  toPosition: number,
-): SubtaskPositionUpdate[] {
-  const next = applySubtaskMove(subtasks, id, toPosition);
-  const updates: SubtaskPositionUpdate[] = [];
-  next.forEach((subtask, index) => {
-    const original = subtasks.find((s) => s.id === subtask.id);
-    if (!original || original.position !== index) {
-      updates.push({ id: subtask.id, position: index });
-    }
-  });
-  return updates;
 }

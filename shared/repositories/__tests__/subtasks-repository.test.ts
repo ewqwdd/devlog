@@ -65,25 +65,27 @@ describe("subtasksRepository", () => {
     expect(subtasksRepository.getMaxPosition(taskB)).toBeNull();
   });
 
-  it("updatePositions reorders within a task in one call", () => {
+  it("move reorders within a task keeping it dense", () => {
     const taskId = createParentTask();
-    const first = subtasksRepository.create({
-      taskId,
-      title: "a",
-      position: 0,
-    });
-    const second = subtasksRepository.create({
-      taskId,
-      title: "b",
-      position: 1,
-    });
-    subtasksRepository.updatePositions([
-      { id: first.id, position: 1 },
-      { id: second.id, position: 0 },
-    ]);
-    expect(subtasksRepository.listByTaskId(taskId).map((s) => s.title)).toEqual(
-      ["b", "a"],
-    );
+    const a = subtasksRepository.create({ taskId, title: "a", position: 0 });
+    subtasksRepository.create({ taskId, title: "b", position: 1 });
+    subtasksRepository.create({ taskId, title: "c", position: 2 });
+    subtasksRepository.move(a.id, taskId, 0, 2);
+    const list = subtasksRepository.listByTaskId(taskId);
+    expect(list.map((s) => s.title)).toEqual(["b", "c", "a"]);
+    expect(list.map((s) => s.position)).toEqual([0, 1, 2]);
+  });
+
+  it("closeGapAfterDelete pulls a task's followers down by one", () => {
+    const taskId = createParentTask();
+    subtasksRepository.create({ taskId, title: "a", position: 0 });
+    const b = subtasksRepository.create({ taskId, title: "b", position: 1 });
+    subtasksRepository.create({ taskId, title: "c", position: 2 });
+    subtasksRepository.delete(b.id);
+    subtasksRepository.closeGapAfterDelete(taskId, b.position);
+    const list = subtasksRepository.listByTaskId(taskId);
+    expect(list.map((s) => s.title)).toEqual(["a", "c"]);
+    expect(list.map((s) => s.position)).toEqual([0, 1]);
   });
 
   it("throws when creating a subtask for a nonexistent task (FK enforced)", () => {

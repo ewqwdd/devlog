@@ -1,15 +1,7 @@
 import { TaskNotFoundError } from "@/services/task-not-found-error";
+import { clamp } from "@/shared/lib/clamp";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
-import type {
-  Board,
-  Task,
-  TaskPositionUpdate,
-  TaskStatus,
-} from "@/shared/types/task";
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import type { Board, Task, TaskStatus } from "@/shared/types/task";
 
 function arrayMove(items: readonly Task[], from: number, to: number): Task[] {
   const next = [...items];
@@ -38,6 +30,8 @@ function locate(
 }
 
 // Returns a new, fully dense board with the moved task at its new spot.
+// Used client-side for optimistic reordering; the server persists via
+// relative shifts in tasksRepository.move.
 export function applyMove(
   board: Board,
   taskId: string,
@@ -76,29 +70,4 @@ export function applyMove(
     }));
   }
   return next;
-}
-
-// Minimal transaction: only rows whose position or status actually changed.
-export function computeMove(
-  board: Board,
-  taskId: string,
-  toStatus: TaskStatus,
-  toIndex: number,
-): TaskPositionUpdate[] {
-  const next = applyMove(board, taskId, toStatus, toIndex);
-  const updates: TaskPositionUpdate[] = [];
-  for (const status of TASK_STATUSES) {
-    const before = board[status];
-    next[status].forEach((task, index) => {
-      const original = before.find((t) => t.id === task.id);
-      if (
-        !original ||
-        original.position !== index ||
-        original.status !== status
-      ) {
-        updates.push({ id: task.id, position: index, status });
-      }
-    });
-  }
-  return updates;
 }

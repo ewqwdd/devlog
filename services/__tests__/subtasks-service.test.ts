@@ -72,6 +72,16 @@ describe("subtasksService.moveSubtask", () => {
     expect(positions(taskId)).toEqual([0, 1, 2]);
   });
 
+  it("moves forward and clamps a too-large position to the last slot", () => {
+    const taskId = createParentTask();
+    const a = subtasksService.createSubtask({ taskId, title: "a" });
+    subtasksService.createSubtask({ taskId, title: "b" });
+    subtasksService.createSubtask({ taskId, title: "c" });
+    subtasksService.moveSubtask(a.id, 99);
+    expect(titles(taskId)).toEqual(["b", "c", "a"]);
+    expect(positions(taskId)).toEqual([0, 1, 2]);
+  });
+
   it("throws SubtaskNotFoundError for an unknown id", () => {
     expect(() => subtasksService.moveSubtask("missing", 0)).toThrow(
       SubtaskNotFoundError,

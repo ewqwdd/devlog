@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMove, computeMove } from "@/services/compute-move";
+import { applyMove } from "@/services/compute-move";
 import { TaskNotFoundError } from "@/services/task-not-found-error";
 import type { Board, Task, TaskStatus } from "@/shared/types/task";
 
@@ -26,7 +26,7 @@ function dense(board: Board, status: TaskStatus): string[] {
   return board[status].map((t) => `${t.id}@${t.position}`);
 }
 
-describe("computeMove — in-column", () => {
+describe("applyMove — in-column", () => {
   it("move up (position 5 -> 0): tasks 0..4 each +1, moved gets 0, stays dense 0..5", () => {
     const board = makeBoard({ todo: ["a", "b", "c", "d", "e", "f"] });
     const next = applyMove(board, "f", "todo", 0);
@@ -38,11 +38,6 @@ describe("computeMove — in-column", () => {
       "d@4",
       "e@5",
     ]);
-    const updates = computeMove(board, "f", "todo", 0);
-    // every row's position changed -> all 6 emitted
-    expect(updates).toHaveLength(6);
-    expect(updates.find((u) => u.id === "f")?.position).toBe(0);
-    expect(updates.find((u) => u.id === "a")?.position).toBe(1);
   });
 
   it("move down (position 0 -> 5): tasks 1..5 each -1, moved gets 5", () => {
@@ -55,25 +50,19 @@ describe("computeMove — in-column", () => {
       "f@4",
       "a@5",
     ]);
-    expect(
-      computeMove(board, "a", "todo", 5).find((u) => u.id === "a")?.position,
-    ).toBe(5);
   });
 
-  it("no-op: same column, same index -> empty array", () => {
+  it("no-op: same column, same index -> unchanged dense order", () => {
     const board = makeBoard({ todo: ["a", "b", "c"] });
-    expect(computeMove(board, "b", "todo", 1)).toEqual([]);
-  });
-
-  it("minimal diff: only rows whose position changed are returned", () => {
-    // move c (index 2) to index 1 in a column of 4 -> only b and c shift
-    const board = makeBoard({ todo: ["a", "b", "c", "d"] });
-    const updates = computeMove(board, "c", "todo", 1);
-    expect(updates.map((u) => u.id).sort()).toEqual(["b", "c"]);
+    expect(dense(applyMove(board, "b", "todo", 1), "todo")).toEqual([
+      "a@0",
+      "b@1",
+      "c@2",
+    ]);
   });
 });
 
-describe("computeMove — cross-column", () => {
+describe("applyMove — cross-column", () => {
   it("source closes the gap, target shifts +1 at >= toIndex, moved gets toIndex + new status", () => {
     const board = makeBoard({
       todo: ["a", "b", "c"],
@@ -85,12 +74,6 @@ describe("computeMove — cross-column", () => {
     expect(next["in-progress"].find((t) => t.id === "b")?.status).toBe(
       "in-progress",
     );
-
-    const updates = computeMove(board, "b", "in-progress", 1);
-    const moved = updates.find((u) => u.id === "b");
-    expect(moved).toEqual({ id: "b", position: 1, status: "in-progress" });
-    // source: c shifts to 0; target: y shifts to 2; b added -> 3 rows
-    expect(updates.map((u) => u.id).sort()).toEqual(["b", "c", "y"]);
   });
 
   it("into an empty column: moved gets position 0, source closes the gap", () => {
@@ -108,13 +91,10 @@ describe("computeMove — cross-column", () => {
   });
 });
 
-describe("computeMove — errors", () => {
-  it("unknown taskId throws TaskNotFoundError (both functions)", () => {
+describe("applyMove — errors", () => {
+  it("unknown taskId throws TaskNotFoundError", () => {
     const board = makeBoard({ todo: ["a"] });
     expect(() => applyMove(board, "missing", "todo", 0)).toThrow(
-      TaskNotFoundError,
-    );
-    expect(() => computeMove(board, "missing", "todo", 0)).toThrow(
       TaskNotFoundError,
     );
   });

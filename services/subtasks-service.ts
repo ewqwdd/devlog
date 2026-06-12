@@ -1,7 +1,7 @@
-import { computeSubtaskMove } from "@/services/compute-subtask-move";
 import { SubtaskNotFoundError } from "@/services/subtask-not-found-error";
+import { clamp } from "@/shared/lib/clamp";
 import { subtasksRepository } from "@/shared/repositories/subtasks-repository";
-import type { Subtask, SubtaskPositionUpdate } from "@/shared/types/subtask";
+import type { Subtask } from "@/shared/types/subtask";
 
 interface CreateSubtaskInput {
   readonly taskId: string;
@@ -37,14 +37,10 @@ export const subtasksService = {
     if (!subtask) {
       throw new SubtaskNotFoundError(id);
     }
-    const updates = computeSubtaskMove(
-      subtasksRepository.listByTaskId(subtask.taskId),
-      id,
-      toPosition,
-    );
-    if (updates.length > 0) {
-      subtasksRepository.updatePositions(updates);
-    }
+    // The list stays dense, so its max position is its last index.
+    const max = subtasksRepository.getMaxPosition(subtask.taskId) ?? 0;
+    const clamped = clamp(toPosition, 0, max);
+    subtasksRepository.move(id, subtask.taskId, subtask.position, clamped);
   },
 
   deleteSubtask(id: string): void {
@@ -53,15 +49,6 @@ export const subtasksService = {
       throw new SubtaskNotFoundError(id);
     }
     subtasksRepository.delete(id);
-    const remaining = subtasksRepository.listByTaskId(subtask.taskId);
-    const updates: SubtaskPositionUpdate[] = [];
-    remaining.forEach((s, index) => {
-      if (s.position !== index) {
-        updates.push({ id: s.id, position: index });
-      }
-    });
-    if (updates.length > 0) {
-      subtasksRepository.updatePositions(updates);
-    }
+    subtasksRepository.closeGapAfterDelete(subtask.taskId, subtask.position);
   },
 };

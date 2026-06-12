@@ -1,10 +1,9 @@
-import { asc, eq, max } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lt, lte, max, sql } from "drizzle-orm";
 import { db } from "@/shared/infra/db";
 import { tasks } from "@/shared/infra/db/schema";
 import type {
   NewTask,
   Task,
-  TaskPositionUpdate,
   TaskPriority,
   TaskStatus,
 } from "@/shared/types/task";
@@ -61,14 +60,71 @@ export const tasksRepository = {
     return row?.value ?? null;
   },
 
-  updatePositions(updates: ReadonlyArray<TaskPositionUpdate>): void {
+  /** After a row leaves `position` in `status`, pull its followers down by one. */
+  closeGapAfterDelete(status: TaskStatus, position: number): void {
+    db.update(tasks)
+      .set({ position: sql`${tasks.position} - 1` })
+      .where(and(eq(tasks.status, status), gt(tasks.position, position)))
+      .run();
+  },
+
+  /**
+   * Reorder via relative shifts: one ranged UPDATE closes/opens the gap, a
+   * second places the moved row. Callers pass already-clamped, dense positions.
+   */
+  move(
+    id: string,
+    fromStatus: TaskStatus,
+    fromPosition: number,
+    toStatus: TaskStatus,
+    toPosition: number,
+  ): void {
+    if (fromStatus === toStatus && fromPosition === toPosition) {
+      return;
+    }
     db.transaction((tx) => {
-      for (const update of updates) {
+      if (fromStatus === toStatus) {
+        if (fromPosition < toPosition) {
+          tx.update(tasks)
+            .set({ position: sql`${tasks.position} - 1` })
+            .where(
+              and(
+                eq(tasks.status, fromStatus),
+                gt(tasks.position, fromPosition),
+                lte(tasks.position, toPosition),
+              ),
+            )
+            .run();
+        } else {
+          tx.update(tasks)
+            .set({ position: sql`${tasks.position} + 1` })
+            .where(
+              and(
+                eq(tasks.status, fromStatus),
+                gte(tasks.position, toPosition),
+                lt(tasks.position, fromPosition),
+              ),
+            )
+            .run();
+        }
+      } else {
         tx.update(tasks)
-          .set({ position: update.position, status: update.status })
-          .where(eq(tasks.id, update.id))
+          .set({ position: sql`${tasks.position} - 1` })
+          .where(
+            and(eq(tasks.status, fromStatus), gt(tasks.position, fromPosition)),
+          )
+          .run();
+        tx.update(tasks)
+          .set({ position: sql`${tasks.position} + 1` })
+          .where(
+            and(eq(tasks.status, toStatus), gte(tasks.position, toPosition)),
+          )
           .run();
       }
+      tx.update(tasks)
+        .set({ position: toPosition, status: toStatus })
+        .where(eq(tasks.id, id))
+        .run();
     });
   },
 };

@@ -113,6 +113,55 @@ describe("tasksService.moveTask", () => {
     ]);
   });
 
+  it("same-column reorder moves the card and keeps the column dense", () => {
+    const a = tasksService.createTask({
+      title: "a",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+    tasksService.createTask({
+      title: "b",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+    tasksService.createTask({
+      title: "c",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+
+    tasksService.moveTask(a.id, "todo", 2); // front to back
+
+    const todo = tasksRepository.listByStatus("todo");
+    expect(todo.map((t) => t.title)).toEqual(["b", "c", "a"]);
+    expect(todo.map((t) => t.position)).toEqual([0, 1, 2]);
+  });
+
+  it("clamps a too-large in-column toIndex to the last slot", () => {
+    const a = tasksService.createTask({
+      title: "a",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+    tasksService.createTask({
+      title: "b",
+      description: "",
+      status: "todo",
+      priority: "medium",
+    });
+
+    tasksService.moveTask(a.id, "todo", 99);
+
+    expect(tasksRepository.listByStatus("todo").map((t) => t.title)).toEqual([
+      "b",
+      "a",
+    ]);
+  });
+
   it("throws TaskNotFoundError for an unknown id", () => {
     expect(() => tasksService.moveTask("missing", "done", 0)).toThrow(
       TaskNotFoundError,
