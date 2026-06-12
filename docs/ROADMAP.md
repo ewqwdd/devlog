@@ -3,7 +3,7 @@
 Build order derived from `DESIGN.md`. Each phase ends with a verifiable
 checkpoint; a phase is "done" only when its checkpoint passes. AI features
 follow the design's dependency order: chat agent + prioritization are the core,
-decomposition and the status generator come after.
+decomposition comes after.
 
 ## Progress
 
@@ -15,7 +15,6 @@ decomposition and the status generator come after.
 - [x] Phase 5 — Prioritization agent
 - [x] Phase 6 — Task decomposition
 - [ ] Phase 7 — Polish & handoff
-- [ ] Phase 8 — Status-update generator + Status Log
 
 ## Phase 0 — Project scaffold
 
@@ -117,14 +116,3 @@ task → prefilled subtask form → confirm → subtasks saved.
 
 **Checkpoint:** fresh clone → `npm install && npm run dev` → all features work
 with a provided key; full test suite passes.
-
-## Phase 8 — Status-update generator (feature C) + Status Log
-
-- Backend catches the `status → done` transition (use-case orchestrating tasks
-  + status-updates services), passes `taskId` to the agent.
-- Agent fetches task + subtasks, writes a Slack-style update, surfaces the next
-  highest priority; stored as a `status_updates` row.
-- Status Log page listing updates.
-
-**Checkpoint:** drag a card to done → a status update appears on the Status Log
-page; moving done → done or done → todo does not generate one.

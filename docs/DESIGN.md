@@ -7,8 +7,8 @@ Engineering-team task tracker with an AI layer. This document captures the
 ## 1. Context & problem
 
 An engineering team tracks work in DevLog. Each task has a title, description,
-status, and priority. The friction is manual: deciding what to do next, breaking
-tasks into subtasks, and writing status updates for teammates. The base tracker
+status, and priority. The friction is manual: deciding what to do next and
+breaking tasks into subtasks. The base tracker
 solves storage and CRUD; the AI layer removes the friction with agents that
 reason over the current board state instead of answering one-shot prompts.
 
@@ -18,8 +18,7 @@ reason over the current board state instead of answering one-shot prompts.
 
 - A working kanban CRUD tracker for a single team / single user, local only.
 - An AI layer with real multi-step agents (not single LLM calls): a tool-using
-  chat agent, a prioritization sub-agent, AI task decomposition, and an automatic
-  status-update generator.
+  chat agent, a prioritization sub-agent, and AI task decomposition.
 - Everything runs with `npm install && npm run dev`. No deploy, no auth.
 
 ### Non-goals
@@ -32,7 +31,7 @@ reason over the current board state instead of answering one-shot prompts.
 
 ## 3. Architecture (shape & boundaries)
 
-- Single Next.js (App Router) process. UI (kanban + chat + status log) →
+- Single Next.js (App Router) process. UI (kanban + chat) →
   Server Actions / Route Handlers → service layer → Drizzle → SQLite. The service
   layer is the only path to data (per `CLAUDE.md`).
 - AI agents reach data only through the same services as the UI. Tools are
@@ -56,7 +55,7 @@ reason over the current board state instead of answering one-shot prompts.
 
 ## 4. Data model (Drizzle / SQLite)
 
-Three tables: `tasks`, `subtasks`, `status_updates`.
+Two tables: `tasks`, `subtasks`.
 
 ```ts
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
@@ -84,15 +83,6 @@ export const subtasks = sqliteTable('subtasks', {
   position: integer('position').notNull().default(0), // order within a task
   done: integer('done', { mode: 'boolean' }).notNull().default(false),
 });
-
-export const statusUpdates = sqliteTable('status_updates', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  taskId: text('task_id').notNull()
-    .references(() => tasks.id, { onDelete: 'cascade' }),
-  text: text('text').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .notNull().$defaultFn(() => new Date()),
-});
 ```
 
 ## 5. Product functionality
@@ -119,9 +109,9 @@ export const statusUpdates = sqliteTable('status_updates', {
 
 ## 6. AI / agent design
 
-Four AI features. The chat agent and prioritization agent are the core
-(genuinely multi-step, agent-invoking-agent). Decomposition and the status
-generator are built after the core works.
+Three AI features. The chat agent and prioritization agent are the core
+(genuinely multi-step, agent-invoking-agent). Decomposition is built after the
+core works.
 
 ### 6.1 Chat agent — (own idea, feature D)
 
@@ -161,15 +151,6 @@ generator are built after the core works.
   subtasks → autofills the subtask form → the user edits/confirms (or adds
   subtasks manually). It is form auto-fill, not silent creation.
 
-### 6.4 Status-update generator — (feature C)
-
-- Triggered when a card is moved to `done`. The backend catches the
-  `status → done` transition and passes the `taskId` to the agent.
-- The agent fetches the task + its subtasks, writes a short status update
-  describing what was done (Slack-style tone), and surfaces the next highest
-  priority. Stored as a `status_updates` row linked to the task.
-- A dedicated Status Log page lists status updates.
-
 ## 7. Key decisions (decision → why → tradeoff)
 
 - **HTTP streaming (via the AI SDK) over WebSocket.** LLM streaming is one-way and
@@ -184,7 +165,7 @@ generator are built after the core works.
   multi-user.
 - **Vercel AI SDK (Anthropic provider) for the entire AI layer.** One SDK for
   everything: `useChat`/`streamText` for the chat agent, `generateText` for the
-  prioritization and status agents, `generateObject` for decomposition.
+  prioritization agent, `generateObject` for decomposition.
   Tradeoff: one abstraction layer, but a single consistent surface, less code
   to hand-roll, and built-in mock-model utilities for the `MOCK_LLM` toggle.
 - **One-level subtasks (no deeper nesting).** Matches real trackers (Asana).
