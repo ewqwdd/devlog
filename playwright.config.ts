@@ -15,6 +15,6 @@ export default defineConfig({
     url: "http://localhost:3000",
     timeout: 120_000,
     reuseExistingServer: !process.env["CI"],
-    env: { DB_FILE_NAME: ".e2e/devlog-e2e.db" },
+    env: { DB_FILE_NAME: ".e2e/devlog-e2e.db", MOCK_LLM: "1" },
   },
 });
