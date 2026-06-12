@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { SubtaskList } from "@/app/_components/subtask-list";
+import { SubtaskList } from "@/components/subtask-list";
 import { useCreateSubtaskMutation } from "@/shared/hooks/use-create-subtask-mutation";
 import { useDeleteSubtaskMutation } from "@/shared/hooks/use-delete-subtask-mutation";
 import { useMoveSubtaskMutation } from "@/shared/hooks/use-move-subtask-mutation";

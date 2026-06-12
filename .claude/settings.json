@@ -90,5 +90,8 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "context7@context7-marketplace": true
   }
 }

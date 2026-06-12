@@ -4,51 +4,19 @@ import { notFound, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { SubtaskSection } from "@/app/_components/subtask-section";
-import { PriorityIcon } from "@/components/priority-icon";
+import { PrioritySelect } from "@/components/priority-select";
+import { StatusSelect } from "@/components/status-select";
+import { SubtaskSection } from "@/components/subtask-section";
 import { useBoardQuery } from "@/shared/hooks/use-board-query";
 import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
 import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
 import { useUpdateTaskMutation } from "@/shared/hooks/use-update-task-mutation";
-import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
-import type {
-  Board,
-  Task,
-  TaskPriority,
-  TaskStatus,
-} from "@/shared/types/task";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/shared/ui/alert-dialog";
+import { TASK_STATUSES } from "@/shared/lib/task-constants";
+import type { Board, Task } from "@/shared/types/task";
 import { Button } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { Input } from "@/shared/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  todo: "Todo",
-  "in-progress": "In Progress",
-  done: "Done",
-};
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-};
 
 function findTask(board: Board | undefined, id: string): Task | undefined {
   if (!board) {
@@ -169,31 +137,17 @@ export function TaskModalContent({
 
       {/* Sidebar */}
       <div className="w-full flex-shrink-0 px-6 pt-5 pb-7 md:w-[320px]">
-        <Select
+        <StatusSelect
           value={task.status}
-          onValueChange={(v): void => {
-            const toStatus = v as TaskStatus;
+          onValueChange={(toStatus): void => {
             moveMutation.mutate({
               id,
               toStatus,
               toIndex: board ? board[toStatus].length : 0,
             });
           }}
-        >
-          <SelectTrigger
-            data-testid="modal-status"
-            className="h-auto w-auto gap-2 rounded-[4px] border-0 bg-primary/10 px-[13px] py-[9px] text-[12px] font-bold tracking-[0.04em] text-primary uppercase hover:bg-primary/20 focus-visible:ring-2 [&_svg]:text-primary"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {TASK_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {STATUS_LABEL[s]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          data-testid="modal-status"
+        />
 
         <div className="mt-[18px] overflow-hidden rounded-[8px] border border-border">
           <div className="border-b border-border bg-muted/50 px-3.5 py-3 text-[13px] font-bold text-foreground/80">
@@ -204,66 +158,35 @@ export function TaskModalContent({
               <span className="w-24 flex-shrink-0 text-muted-foreground">
                 Priority
               </span>
-              <Select
+              <PrioritySelect
                 value={task.priority}
-                onValueChange={(v): void => {
-                  updateMutation.mutate({ priority: v as TaskPriority });
+                onValueChange={(priority): void => {
+                  updateMutation.mutate({ priority });
                 }}
-              >
-                <SelectTrigger
-                  data-testid="modal-priority"
-                  className="h-auto w-auto gap-1.5 rounded-[4px] border-0 bg-transparent px-1.5 py-1 text-[13.5px] font-normal text-foreground hover:bg-muted focus-visible:ring-2"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TASK_PRIORITIES.map((p) => (
-                    <SelectItem key={p} value={p}>
-                      <span className="flex items-center gap-2">
-                        <PriorityIcon priority={p} />
-                        {PRIORITY_LABEL[p]}
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                data-testid="modal-priority"
+              />
             </div>
           </div>
         </div>
 
         <div className="mt-3.5 flex justify-end">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <ConfirmDialog
+            trigger={
               <Button
                 data-testid="modal-delete"
                 className="border border-destructive/30 bg-transparent text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
                 Delete
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="font-bold">
-                  Delete this task?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  This cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  data-testid="modal-confirm-delete"
-                  className="border-transparent !bg-destructive !text-white hover:!bg-[#ae2a1a]"
-                  onClick={(): void => {
-                    deleteMutation.mutate(id);
-                  }}
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            }
+            title="Delete this task?"
+            description="This cannot be undone."
+            confirmLabel="Delete"
+            confirmTestId="modal-confirm-delete"
+            onConfirm={(): void => {
+              deleteMutation.mutate(id);
+            }}
+          />
         </div>
       </div>
     </div>

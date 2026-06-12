@@ -23,17 +23,8 @@ import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
 import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { Board as BoardData, Task, TaskStatus } from "@/shared/types/task";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/shared/ui/alert-dialog";
 import { Button } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 const EMPTY_BOARD: BoardData = { todo: [], "in-progress": [], done: [] };
@@ -183,40 +174,24 @@ export function Board(): React.JSX.Element {
         </DndContext>
       )}
 
-      <AlertDialog
+      <ConfirmDialog
         open={pendingDelete !== null}
         onOpenChange={(open): void => {
           if (!open) {
             setPendingDelete(null);
           }
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-bold">
-              Delete this task?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="confirm-delete"
-              className="border-transparent !bg-destructive !text-white hover:!bg-[#ae2a1a]"
-              onClick={(): void => {
-                if (pendingDelete) {
-                  deleteMutation.mutate(pendingDelete);
-                }
-                setPendingDelete(null);
-              }}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Delete this task?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        confirmTestId="confirm-delete"
+        onConfirm={(): void => {
+          if (pendingDelete) {
+            deleteMutation.mutate(pendingDelete);
+          }
+          setPendingDelete(null);
+        }}
+      />
     </div>
   );
 }

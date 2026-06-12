@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { SubtaskItem } from "@/app/_components/subtask-item";
+import { SubtaskItem } from "@/components/subtask-item";
 import { applySubtaskMove } from "@/services/compute-subtask-move";
 import { subtasksKey } from "@/shared/hooks/use-subtasks-query";
 import type { Subtask } from "@/shared/types/subtask";

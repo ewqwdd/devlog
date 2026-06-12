@@ -1,5 +1,5 @@
 import type React from "react";
-import { TaskForm } from "@/app/_components/task-form";
+import { TaskForm } from "@/components/task-form";
 
 export default function CreateTaskPage(): React.JSX.Element {
   return (

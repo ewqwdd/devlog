@@ -1,5 +1,5 @@
 import type React from "react";
-import { TaskModalContent } from "@/app/_components/task-modal-content";
+import { TaskModalContent } from "@/components/task-modal-content";
 
 export default async function TaskPage({
   params,

@@ -4,31 +4,13 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { PriorityIcon } from "@/components/priority-icon";
+import { PrioritySelect } from "@/components/priority-select";
+import { StatusSelect } from "@/components/status-select";
 import { useCreateTaskMutation } from "@/shared/hooks/use-create-task-mutation";
-import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { TaskPriority, TaskStatus } from "@/shared/types/task";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/shared/ui/select";
 import { Textarea } from "@/shared/ui/textarea";
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  todo: "Todo",
-  "in-progress": "In Progress",
-  done: "Done",
-};
-const PRIORITY_LABEL: Record<TaskPriority, string> = {
-  low: "Low",
-  medium: "Medium",
-  high: "High",
-};
 
 const LABEL_CLASS =
   "mb-1.5 block text-[12.5px] font-semibold text-foreground/80";
@@ -100,42 +82,21 @@ export function TaskForm(): React.JSX.Element {
         <div className="flex gap-3.5">
           <div className="flex-1">
             <span className={LABEL_CLASS}>Status</span>
-            <Select
+            <StatusSelect
               value={status}
-              onValueChange={(v): void => setStatus(v as TaskStatus)}
-            >
-              <SelectTrigger data-testid="status-select" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASK_STATUSES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={setStatus}
+              data-testid="status-select"
+              className="w-full"
+            />
           </div>
           <div className="flex-1">
             <span className={LABEL_CLASS}>Priority</span>
-            <Select
+            <PrioritySelect
               value={priority}
-              onValueChange={(v): void => setPriority(v as TaskPriority)}
-            >
-              <SelectTrigger data-testid="priority-select" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TASK_PRIORITIES.map((p) => (
-                  <SelectItem key={p} value={p}>
-                    <span className="flex items-center gap-2">
-                      <PriorityIcon priority={p} />
-                      {PRIORITY_LABEL[p]}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onValueChange={setPriority}
+              data-testid="priority-select"
+              className="w-full border border-zinc-200"
+            />
           </div>
         </div>
       </div>

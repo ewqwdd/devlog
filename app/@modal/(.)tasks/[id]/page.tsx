@@ -4,7 +4,7 @@ import { RiCloseLine } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { use } from "react";
-import { TaskModalContent } from "@/app/_components/task-modal-content";
+import { TaskModalContent } from "@/components/task-modal-content";
 import {
   Dialog,
   DialogClose,

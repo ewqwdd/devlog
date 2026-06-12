@@ -3,7 +3,7 @@
 import { RiCloseLine } from "@remixicon/react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { TaskForm } from "@/app/_components/task-form";
+import { TaskForm } from "@/components/task-form";
 import {
   Dialog,
   DialogClose,
