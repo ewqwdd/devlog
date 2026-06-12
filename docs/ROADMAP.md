@@ -14,8 +14,8 @@ decomposition comes after.
 - [x] Phase 4 — Chat agent
 - [x] Phase 5 — Prioritization agent
 - [x] Phase 6 — Task decomposition
-- [ ] Phase 6.1 — Refactor after human review
-- [ ] Phase 7 — Polish & handoff
+- [x] Phase 6.1 — Refactor after human review
+- [x] Phase 7 — Polish & handoff
 
 ## Phase 0 — Project scaffold
 
