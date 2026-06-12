@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import type { TaskStatus } from "@/shared/types/task";
 
 function cardByTitle(page: Page, title: string): Locator {
@@ -51,4 +51,61 @@ export async function columnTitles(
   const titles = await cards.allInnerTexts();
   // strip the priority badge text on the second line
   return titles.map((t): string => t.split("\n")[0]?.trim() ?? "");
+}
+
+async function waitForBoardReady(page: Page): Promise<void> {
+  await expect(page.getByTestId("column-todo")).toBeVisible();
+  await expect(page.getByTestId("column-in-progress")).toBeVisible();
+  await expect(page.getByTestId("column-done")).toBeVisible();
+}
+
+// The shared e2e db is reset once per run, so each spec must start from empty.
+export async function clearBoard(page: Page): Promise<void> {
+  await waitForBoardReady(page);
+  for (;;) {
+    const cards = page.getByTestId("task-card");
+    const count = await cards.count();
+    if (count === 0) {
+      return;
+    }
+    const first = cards.first();
+    await first.hover();
+    await first.getByTestId("card-delete").click();
+    await page.getByTestId("confirm-delete").click();
+    await expect(page.getByTestId("task-card")).toHaveCount(count - 1);
+  }
+}
+
+export async function createTask(
+  page: Page,
+  opts: {
+    title: string;
+    status?: TaskStatus;
+    priority?: "low" | "medium" | "high";
+  },
+): Promise<void> {
+  await page.getByRole("button", { name: "New task" }).click();
+  await page.getByTestId("title-input").fill(opts.title);
+  if (opts.status) {
+    await page.getByTestId("status-select").click();
+    await page
+      .getByRole("option", {
+        name: { todo: "Todo", "in-progress": "In Progress", done: "Done" }[
+          opts.status
+        ],
+      })
+      .click();
+  }
+  if (opts.priority) {
+    await page.getByTestId("priority-select").click();
+    await page
+      .getByRole("option", {
+        name: { low: "Low", medium: "Medium", high: "High" }[opts.priority],
+      })
+      .click();
+  }
+  await page.getByTestId("create-submit").click();
+  await expect(
+    page.getByTestId("task-card").filter({ hasText: opts.title }),
+  ).toBeVisible();
 }
