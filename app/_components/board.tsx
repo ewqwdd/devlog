@@ -10,16 +10,17 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BoardColumn } from "@/app/_components/board-column";
-import { useBoardQuery } from "@/app/_components/hooks/use-board-query";
-import { useDeleteTaskMutation } from "@/app/_components/hooks/use-delete-task-mutation";
-import { useMoveTaskMutation } from "@/app/_components/hooks/use-move-task-mutation";
 import { TaskCard } from "@/components/task-card";
 import { applyMove } from "@/services/compute-move";
+import { BOARD_KEY, useBoardQuery } from "@/shared/hooks/use-board-query";
+import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
+import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { Board as BoardData, Task, TaskStatus } from "@/shared/types/task";
 import {
@@ -58,6 +59,7 @@ export function Board(): React.JSX.Element {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [dragBoard, setDragBoard] = useState<BoardData | null>(null);
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -125,6 +127,13 @@ export function Board(): React.JSX.Element {
       return;
     }
     moveMutation.mutate({ id: activeId, toStatus, toIndex });
+    const previous = queryClient.getQueryData<BoardData>(BOARD_KEY);
+    if (previous) {
+      queryClient.setQueryData<BoardData>(
+        BOARD_KEY,
+        applyMove(previous, activeId, toStatus, toIndex),
+      );
+    }
   }
 
   return (

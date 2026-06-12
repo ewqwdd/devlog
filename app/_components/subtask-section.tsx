@@ -3,12 +3,12 @@
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCreateSubtaskMutation } from "@/app/_components/hooks/use-create-subtask-mutation";
-import { useDeleteSubtaskMutation } from "@/app/_components/hooks/use-delete-subtask-mutation";
-import { useMoveSubtaskMutation } from "@/app/_components/hooks/use-move-subtask-mutation";
-import { useSubtasksQuery } from "@/app/_components/hooks/use-subtasks-query";
-import { useUpdateSubtaskMutation } from "@/app/_components/hooks/use-update-subtask-mutation";
 import { SubtaskList } from "@/app/_components/subtask-list";
+import { useCreateSubtaskMutation } from "@/shared/hooks/use-create-subtask-mutation";
+import { useDeleteSubtaskMutation } from "@/shared/hooks/use-delete-subtask-mutation";
+import { useMoveSubtaskMutation } from "@/shared/hooks/use-move-subtask-mutation";
+import { useSubtasksQuery } from "@/shared/hooks/use-subtasks-query";
+import { useUpdateSubtaskMutation } from "@/shared/hooks/use-update-subtask-mutation";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Skeleton } from "@/shared/ui/skeleton";
@@ -63,6 +63,7 @@ export function SubtaskSection({
         </div>
       ) : (
         <SubtaskList
+          taskId={taskId}
           subtasks={subtasks ?? []}
           onMove={(vars): void => moveMutation.mutate(vars)}
           onToggle={(id, done): void =>

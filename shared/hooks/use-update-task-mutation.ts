@@ -3,8 +3,8 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BOARD_KEY } from "@/app/_components/hooks/use-board-query";
 import { updateTaskAction } from "@/app/actions/tasks";
+import { BOARD_KEY } from "@/shared/hooks/use-board-query";
 import type { Task, TaskPriority } from "@/shared/types/task";
 
 export interface UpdateTaskPatch {

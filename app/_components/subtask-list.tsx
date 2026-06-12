@@ -11,23 +11,29 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { SubtaskItem } from "@/app/_components/subtask-item";
+import { applySubtaskMove } from "@/services/compute-subtask-move";
+import { subtasksKey } from "@/shared/hooks/use-subtasks-query";
 import type { Subtask } from "@/shared/types/subtask";
 
 export function SubtaskList({
+  taskId,
   subtasks,
   onMove,
   onToggle,
   onRename,
   onDelete,
 }: {
+  taskId: string;
   subtasks: Subtask[];
   onMove: (vars: { id: string; toPosition: number }) => void;
   onToggle: (id: string, done: boolean) => void;
   onRename: (id: string, title: string) => void;
   onDelete: (id: string) => void;
 }): React.JSX.Element {
+  const queryClient = useQueryClient();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
@@ -41,7 +47,16 @@ export function SubtaskList({
     if (toPosition === -1) {
       return;
     }
-    onMove({ id: String(active.id), toPosition });
+    const activeId = String(active.id);
+    onMove({ id: activeId, toPosition });
+    const queryKey = subtasksKey(taskId);
+    const previous = queryClient.getQueryData<Subtask[]>(queryKey);
+    if (previous) {
+      queryClient.setQueryData<Subtask[]>(
+        queryKey,
+        applySubtaskMove(previous, activeId, toPosition),
+      );
+    }
   }
 
   return (

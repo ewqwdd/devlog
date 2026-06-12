@@ -83,6 +83,7 @@ shared/ui/              pure UI components, portable to any project
 shared/repositories/    repository layer
 shared/infra/           infra clients (DB connection, Claude API, ...)
 shared/lib/             helpers: formatting, logger setup, etc.
+shared/hooks/           client React hooks (TanStack Query data hooks, API-request hooks)
 shared/types/           types reused in more than one place
 ```
 - **`shared/ui/`** — reusable UI components not tied to any feature (e.g. `Input`, `Button`).
@@ -118,8 +119,10 @@ shared/types/           types reused in more than one place
   redeclared in another file.
 - Before writing a new query hook, check for an existing one: one hook per query key, reused by
   every consumer.
-- Hook files live in a `hooks/` folder next to their consumer components
-  (e.g. `app/<page>/_components/hooks/`).
+- All custom React hooks live in `shared/hooks/` (`shared/hooks/use-<name>.ts`), never in a
+  `hooks/` folder next to components. Every hook that performs an API request — TanStack Query
+  calls and any Server Action wrapper — MUST be extracted into `shared/hooks/` and imported from
+  there by its consumers.
 
 ### Docs & UI components — strict, no deviations
 - Use context7 sparingly. Fetch docs only when ALL of the following hold: the logic is critical

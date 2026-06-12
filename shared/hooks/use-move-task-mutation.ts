@@ -3,9 +3,8 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BOARD_KEY } from "@/app/_components/hooks/use-board-query";
 import { moveTaskAction } from "@/app/actions/tasks";
-import { applyMove } from "@/services/compute-move";
+import { BOARD_KEY } from "@/shared/hooks/use-board-query";
 import type { Board, TaskStatus } from "@/shared/types/task";
 
 export interface MoveTaskVars {
@@ -34,21 +33,8 @@ export function useMoveTaskMutation(
       }
       return result.data;
     },
-    onMutate: async (vars): Promise<MoveTaskContext> => {
-      await queryClient.cancelQueries({ queryKey: BOARD_KEY });
-      const previous = queryClient.getQueryData<Board>(BOARD_KEY);
-      if (previous) {
-        queryClient.setQueryData<Board>(
-          BOARD_KEY,
-          applyMove(previous, vars.id, vars.toStatus, vars.toIndex),
-        );
-      }
-      return { previous };
-    },
-    onError: (error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(BOARD_KEY, context.previous);
-      }
+    onError: (error) => {
+      queryClient.invalidateQueries({ queryKey: BOARD_KEY });
       options.onError?.(error);
     },
     onSettled: () => {

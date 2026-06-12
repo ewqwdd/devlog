@@ -36,6 +36,13 @@ Task tool (general-purpose):
     5. Self-review (see below)
     6. Report back
 
+    **Test scope (hard rule):** To verify your work, run ONLY this task's own targeted
+    unit/integration tests — the fast ones that drive your TDD loop. Do NOT run end-to-end
+    (e2e / browser) tests, and do NOT run the full-project verification suite (whole-project
+    test run, build, whole-project typecheck). Those run once, later, in the plan's final
+    verification task. If your task authors an e2e spec, write the spec file but do NOT
+    execute it.
+
     Work from: [directory]
 
     **While you work:** If you encounter something unexpected or unclear, **ask questions**.

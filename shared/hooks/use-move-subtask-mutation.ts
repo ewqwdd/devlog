@@ -3,9 +3,9 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { subtasksKey } from "@/app/_components/hooks/use-subtasks-query";
 import { moveSubtaskAction } from "@/app/actions/subtasks";
 import { applySubtaskMove } from "@/services/compute-subtask-move";
+import { subtasksKey } from "@/shared/hooks/use-subtasks-query";
 import type { Subtask } from "@/shared/types/subtask";
 
 export interface MoveSubtaskVars {

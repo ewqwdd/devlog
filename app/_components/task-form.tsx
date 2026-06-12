@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useCreateTaskMutation } from "@/app/_components/hooks/use-create-task-mutation";
+import { useCreateTaskMutation } from "@/shared/hooks/use-create-task-mutation";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { TaskPriority, TaskStatus } from "@/shared/types/task";
 import { Button } from "@/shared/ui/button";

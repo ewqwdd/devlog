@@ -3,8 +3,8 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BOARD_KEY } from "@/app/_components/hooks/use-board-query";
 import { deleteTaskAction } from "@/app/actions/tasks";
+import { BOARD_KEY } from "@/shared/hooks/use-board-query";
 import { TASK_STATUSES } from "@/shared/lib/task-constants";
 import type { Board } from "@/shared/types/task";
 

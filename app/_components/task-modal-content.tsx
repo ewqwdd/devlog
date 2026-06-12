@@ -4,11 +4,11 @@ import { notFound, useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useBoardQuery } from "@/app/_components/hooks/use-board-query";
-import { useDeleteTaskMutation } from "@/app/_components/hooks/use-delete-task-mutation";
-import { useMoveTaskMutation } from "@/app/_components/hooks/use-move-task-mutation";
-import { useUpdateTaskMutation } from "@/app/_components/hooks/use-update-task-mutation";
 import { SubtaskSection } from "@/app/_components/subtask-section";
+import { useBoardQuery } from "@/shared/hooks/use-board-query";
+import { useDeleteTaskMutation } from "@/shared/hooks/use-delete-task-mutation";
+import { useMoveTaskMutation } from "@/shared/hooks/use-move-task-mutation";
+import { useUpdateTaskMutation } from "@/shared/hooks/use-update-task-mutation";
 import { TASK_PRIORITIES, TASK_STATUSES } from "@/shared/lib/task-constants";
 import type {
   Board,

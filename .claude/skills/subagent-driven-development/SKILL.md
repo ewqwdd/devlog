@@ -51,6 +51,7 @@ digraph process {
         "Implementer subagent asks questions?" [shape=diamond];
         "Answer questions, provide context" [shape=box];
         "Implementer subagent implements, tests, commits, self-reviews" [shape=box];
+        "Task Type == logic?" [shape=diamond];
         "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [shape=box];
         "Spec reviewer subagent confirms code matches spec?" [shape=diamond];
         "Implementer subagent fixes spec gaps" [shape=box];
@@ -70,7 +71,9 @@ digraph process {
     "Implementer subagent asks questions?" -> "Answer questions, provide context" [label="yes"];
     "Answer questions, provide context" -> "Dispatch implementer subagent (./implementer-prompt.md)";
     "Implementer subagent asks questions?" -> "Implementer subagent implements, tests, commits, self-reviews" [label="no"];
-    "Implementer subagent implements, tests, commits, self-reviews" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)";
+    "Implementer subagent implements, tests, commits, self-reviews" -> "Task Type == logic?";
+    "Task Type == logic?" -> "Mark task complete in TodoWrite" [label="no - mechanical, skip both reviews"];
+    "Task Type == logic?" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="yes"];
     "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" -> "Spec reviewer subagent confirms code matches spec?";
     "Spec reviewer subagent confirms code matches spec?" -> "Implementer subagent fixes spec gaps" [label="no"];
     "Implementer subagent fixes spec gaps" -> "Dispatch spec reviewer subagent (./spec-reviewer-prompt.md)" [label="re-review"];
@@ -86,20 +89,37 @@ digraph process {
 }
 ```
 
+The diagram shows the **per-task full cycle** and a sequential walk. Two refinements layer on top: mechanical tasks skip the reviewers (Review Depth), and independent tasks run concurrently instead of one-at-a-time (Parallel Execution).
+
+## Review Depth: driven by each task's `Type`
+
+The plan tags every task `Type: mechanical | logic`. Honor it:
+
+- **`mechanical` → FAST PATH, no reviewer subagents.** The implementer does the work, follows TDD where a test applies, runs the task's own targeted tests / static checks, self-reviews, and commits — but there is NO spec-reviewer and NO code-quality-reviewer dispatch. Correctness is captured by "its tests/static checks pass", and the final whole-implementation review still covers these files.
+- **`logic` → FULL CYCLE.** implementer → spec-reviewer → code-quality-reviewer with re-review loops (the diagram above).
+
+If a task somehow lacks a `Type`, classify it yourself (no new business logic/branching → mechanical) and default to `logic` when unsure. For logic tasks the two reviews are mandatory — skipping them is a red flag.
+
+## Parallel Execution
+
+Where possible, run independent tasks in parallel instead of strictly one-at-a-time — it's the main wall-clock lever. Independent = the tasks don't depend on each other and touch different files. You (the orchestrator) decide how to schedule and isolate them; when unsure whether two tasks are safe to run together, run them sequentially. Never run tasks that touch the same files concurrently.
+
+## Hard Rule: Defer e2e and Full Verification to the Final Phase
+
+The full verification plan runs **exactly once, in the plan's final verification task — never during per-task execution.** Concretely:
+
+- During a task, the implementer runs **only that task's own targeted unit/integration tests** (fast Vitest) to drive its TDD loop.
+- **No e2e (Playwright / browser) tests during execution — ever.** If a task authors an e2e spec, the implementer writes the spec file but does **not** run it.
+- **No full-suite runs during execution:** not the whole-project test run, not `build`, not whole-project typecheck. Those belong to the final task.
+- The final verification task executes the complete Testing & Verification section in one pass: typecheck, lint, build, the full unit suite, and **all** e2e.
+
+**Why:** e2e and `build` are by far the slowest steps. Running them per-task and then again at the end doubles the slowest part of the wall-clock for zero added safety — the final pass already covers everything. Keep per-task loops to fast unit tests; settle the expensive checks once, at the end.
+
 ## Model Selection
 
-Use the least powerful model that can handle each role to conserve cost and increase speed.
+**Implementer subagents: always use Sonnet (the `sonnet` model alias).**
 
-**Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
-
-**Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): use a standard model.
-
-**Architecture, design, and review tasks**: use the most capable available model.
-
-**Task complexity signals:**
-- Touches 1-2 files with a complete spec → cheap model
-- Touches multiple files with integration concerns → standard model
-- Requires design judgment or broad codebase understanding → most capable model
+**Reviewer subagents (spec compliance + code quality) and the final reviewer: always use Opus 4.8 (the `opus` model alias)** — review is where judgment matters most.
 
 ## Handling Implementer Status
 
@@ -237,9 +257,9 @@ Done!
 
 **Never:**
 - Start implementation on main/master branch without explicit user consent
-- Skip reviews (spec compliance OR code quality)
+- Skip reviews (spec compliance OR code quality) on a **logic task** — mechanical tasks intentionally skip them (see Review Depth)
 - Proceed with unfixed issues
-- Dispatch multiple implementation subagents in parallel (conflicts)
+- Run parallel implementers on tasks that touch the same files (conflicts) — only independent, disjoint-file tasks may run concurrently (see Parallel Execution)
 - Make subagent read plan file (provide full text instead)
 - Skip scene-setting context (subagent needs to understand where task fits)
 - Ignore subagent questions (answer before letting them proceed)

@@ -35,7 +35,11 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ## Bite-Sized Task Granularity
 
-**Each step is one action (2-5 minutes):**
+**A task is one logical part of the scope — not one action.** It's a slice that makes sense independently: a coherent unit you could review and commit on its own (a pure-function pair + its tests, a service + its tests, the controller actions for one module). Steps live *inside* a task; a task groups the steps that deliver one such unit.
+
+**Hard cap: at most 8 tasks per plan.** Decompose into logical parts first, but if that yields more than 8, group related parts until you're at 8 or fewer. Grouping takes priority over one-thing-per-task — some tasks come out larger, and that is normal and intended. Prefer one combined task over several tiny sibling tasks: e.g. instead of one task per component (`SubtaskItem`, then `SubtaskList`, then `SubtaskSection`), write a single "Subtask UI" task that builds all three. The "one logical part, independent" rule yields to the cap — bend it to keep tasks from proliferating. Fewer, wider tasks mean fewer dispatch + review cycles and finish much faster.
+
+**Each step inside a task is one action (2-5 minutes):**
 - "Write the failing test" - step
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
@@ -64,6 +68,8 @@ This structure informs the task decomposition. Each task should produce self-con
 
 ````markdown
 ### Task N: [Component Name]
+
+**Type:** logic | mechanical
 
 **Files:**
 - Create: `exact/path/to/file.py`
@@ -103,6 +109,15 @@ git commit -m "feat: add specific feature"
 ```
 ````
 
+## Task Type (drives review depth)
+
+Every task carries a `Type: mechanical | logic` marker that controls how thoroughly it is reviewed downstream.
+- **mechanical** — introduces no business logic and no branching judgment: dependencies/config/env/scripts, type-only files (typecheck is the test), docs edits, verification-only tasks whose production code already exists, pure transcription of fully-specified code. Correctness is fully captured by "its tests/static checks pass".
+- **logic** — adds behavior or judgment: services, use-cases, repositories, non-trivial components, anything with branching/queries/error handling.
+- When unsure, mark it `logic`.
+
+Assign it at plan time — you have the fullest context here.
+
 ## No Placeholders
 
 Every step must contain the actual content an engineer needs. These are **plan failures** — never write them:
@@ -115,7 +130,7 @@ Every step must contain the actual content an engineer needs. These are **plan f
 
 ## Verification Tasks
 
-The spec's `## Testing & Verification` section is part of the plan's scope. Test code is developed only for two categories: every **Vitest** and **Playwright e2e** case named there must appear as actual test code in a task (it is a TDD target, not an afterthought). The other categories (static checks, viewport screenshots, curl smoke) are run-only checks — nothing to develop. The final task of every plan is "Run the full verification plan" — execute every command from the spec's Testing & Verification section with expected outcomes, as the last steps before declaring the plan complete.
+The spec's `## Testing & Verification` section is part of the plan's scope. Test code is developed only for two categories: every **Vitest** and **Playwright e2e** case named there must appear as actual test code in a task (it is a TDD target, not an afterthought). The other categories (static checks, viewport screenshots, curl smoke) are run-only checks — nothing to develop. The final task of every plan is "Run the full verification plan" — execute every command from the spec's Testing & Verification section with expected outcomes, as the last steps before declaring the plan complete. ("Hard Rule: Defer e2e and Full Verification to the Final Phase".)
 
 ## Remember
 - Exact file paths always
@@ -134,6 +149,8 @@ After writing the complete plan, look at the spec with fresh eyes and check the 
 **3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
 
 **4. Verification coverage:** Does every Vitest and Playwright e2e case from the spec's Testing & Verification section appear as test code in a task, and is the plan's final task "Run the full verification plan"?
+
+**5. Task metadata:** Does every task have a `Type` (logic/mechanical)?
 
 If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
 
